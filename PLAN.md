@@ -28,8 +28,8 @@ Reuse `MvPowerSeries.IsRestricted` from mathlib for the underlying restricted po
 
 1. Define coordinates and the Gauss norm. **Done** (`TateAlgebra/Basic`, `TateAlgebra/GaussNorm`).
 2. Construct the normed commutative `K`-algebra structure. **Done** (`TateAlgebra/NormedRing`).
-3. Prove the ultrametric inequality (**done**), multiplicativity of the Gauss norm, and
-   completeness.
+3. Prove the ultrametric inequality (**done**), completeness (**done**, `TateAlgebra/Complete`;
+   finiteness of the variable set was not needed), and multiplicativity of the Gauss norm.
 4. Prove density of polynomials and the universal property for tuples of norm at most one.
    **Done** (`TateAlgebra/NormedRing`, `TateAlgebra/UniversalProperty`); neither completeness of `K`
    nor finiteness of the variable set was needed.

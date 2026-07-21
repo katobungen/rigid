@@ -1,6 +1,7 @@
 import Mathlib
 import Rigid.AffinoidAlgebra.QuotientNorm
 import Rigid.AffinoidAlgebra.RationalDatum
+import Rigid.TateAlgebra.Complete
 import Rigid.TateAlgebra.UniversalProperty
 
 set_option linter.style.header false
@@ -78,7 +79,7 @@ variable [hι : Finite ι]
 include hι
 
 noncomputable instance tateAlgebraComplete [CompleteSpace K] : CompleteSpace (TateAlgebra K ι) :=
-  sorry
+  Rigid.tateAlgebraComplete K ι
 
 /-- The Gauss norm is the supremum norm on coefficients. -/
 theorem norm_eq_sSup_coeff (f : TateAlgebra K ι) :
