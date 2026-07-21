@@ -22,6 +22,8 @@ algebras. The intended construction order is:
 
 The predicates defining the comparison subcategories below are provisional. Before proving the
 comparison theorem, they must be matched to a precise theorem in the literature; see `PLAN.md`.
+Their interfaces include geometric characterizations, affinoid examples, isomorphism invariance,
+and nonvacuity conditions to constrain constant-predicate and degenerate-category shortcuts.
 -/
 
 open CategoryTheory
@@ -654,7 +656,55 @@ def RigidSpace
 
 noncomputable instance rigidSpaceCategory : Category.{u + 1} (RigidSpace K) := sorry
 
+noncomputable instance rigidSpaceHasBinaryProducts :
+    CategoryTheory.Limits.HasBinaryProducts (RigidSpace K) := sorry
+
 namespace RigidSpace
+
+/-- The type of analytic points of a rigid space. -/
+def Point (X : RigidSpace K) : Type (u + 1) := sorry
+
+/-- An admissible open of a rigid space. -/
+def AdmissibleOpen (X : RigidSpace K) : Type (u + 1) := sorry
+
+namespace AdmissibleOpen
+
+/-- The intersection of two admissible opens. -/
+noncomputable def inter {X : RigidSpace K} (U V : AdmissibleOpen K X) :
+    AdmissibleOpen K X := sorry
+
+/-- An admissible open is quasi-compact for the admissible topology. -/
+def IsQuasiCompact {X : RigidSpace K} (U : AdmissibleOpen K X) : Prop := sorry
+
+end AdmissibleOpen
+
+/-- An affinoid domain in a rigid space. -/
+def AffinoidDomain (X : RigidSpace K) : Type (u + 1) := sorry
+
+namespace AffinoidDomain
+
+/-- The admissible open underlying an affinoid domain. -/
+noncomputable def toAdmissibleOpen {X : RigidSpace K} (U : AffinoidDomain K X) :
+    AdmissibleOpen K X := sorry
+
+/-- The points belonging to an affinoid domain. -/
+noncomputable def carrier {X : RigidSpace K} (U : AffinoidDomain K X) :
+    Set (Point K X) := sorry
+
+end AffinoidDomain
+
+/-- An affinoid cover of a rigid space. -/
+def AffinoidCover (X : RigidSpace K) : Type (u + 1) := sorry
+
+namespace AffinoidCover
+
+/-- An affinoid cover is of finite type in the sense used in the comparison theorem. -/
+def IsFiniteType {X : RigidSpace K} (𝒰 : AffinoidCover K X) : Prop := sorry
+
+end AffinoidCover
+
+/-- A closed immersion of rigid spaces. -/
+def IsClosedImmersion {X Y : RigidSpace K} (f : X ⟶ Y) : Prop := sorry
 
 /-- Every point has an admissible affinoid neighborhood. -/
 def IsLocallyAffinoid (X : RigidSpace K) : Prop := sorry
@@ -672,6 +722,65 @@ def IsParacompact (X : RigidSpace K) : Prop := sorry
 /-- The diagonal is a closed immersion. -/
 def IsSeparated (X : RigidSpace K) : Prop := sorry
 
+/-- Local affinoidness is characterized by affinoid domains through every point. -/
+theorem isLocallyAffinoid_iff (X : RigidSpace K) :
+    IsLocallyAffinoid K X ↔ ∀ x : Point K X, ∃ U : AffinoidDomain K X, x ∈ U.carrier := sorry
+
+/-- Quasi-separatedness is characterized by quasi-compact intersections of affinoid domains. -/
+theorem isQuasiSeparated_iff (X : RigidSpace K) :
+    IsQuasiSeparated K X ↔ ∀ U V : AffinoidDomain K X,
+      AdmissibleOpen.IsQuasiCompact K
+        (AdmissibleOpen.inter K U.toAdmissibleOpen V.toAdmissibleOpen) := sorry
+
+/-- The comparison finiteness condition is witnessed by an affinoid cover of finite type. -/
+theorem isParacompact_iff (X : RigidSpace K) :
+    IsParacompact K X ↔ ∃ 𝒰 : AffinoidCover K X, 𝒰.IsFiniteType := sorry
+
+/-- Separatedness is characterized by the diagonal being a closed immersion. -/
+theorem isSeparated_iff (X : RigidSpace K) :
+    IsSeparated K X ↔ IsClosedImmersion K
+      (CategoryTheory.Limits.prod.lift (𝟙 X) (𝟙 X)) := sorry
+
+/-- Local affinoidness is invariant under analytic isomorphism. -/
+theorem isLocallyAffinoid_iff_of_iso {X Y : RigidSpace K} (e : X ≅ Y) :
+    IsLocallyAffinoid K X ↔ IsLocallyAffinoid K Y := sorry
+
+/-- Quasi-separatedness is invariant under analytic isomorphism. -/
+theorem isQuasiSeparated_iff_of_iso {X Y : RigidSpace K} (e : X ≅ Y) :
+    IsQuasiSeparated K X ↔ IsQuasiSeparated K Y := sorry
+
+/-- The comparison finiteness condition is invariant under analytic isomorphism. -/
+theorem isParacompact_iff_of_iso {X Y : RigidSpace K} (e : X ≅ Y) :
+    IsParacompact K X ↔ IsParacompact K Y := sorry
+
+/-- Separatedness is invariant under analytic isomorphism. -/
+theorem isSeparated_iff_of_iso {X Y : RigidSpace K} (e : X ≅ Y) :
+    IsSeparated K X ↔ IsSeparated K Y := sorry
+
+/-- The rigid space associated to a strict affinoid algebra. -/
+noncomputable def ofAffinoid {A : Type v} [CommRing A] [Algebra K A]
+    (hA : IsAffinoidAlgebra K A) : RigidSpace K := sorry
+
+/-- The points of an affinoid rigid space are the maximal ideals of its coordinate algebra. -/
+noncomputable def pointsOfAffinoidEquiv {A : Type v} [CommRing A] [Algebra K A]
+    (hA : IsAffinoidAlgebra K A) : Point K (ofAffinoid K hA) ≃ MaximalSpectrum A := sorry
+
+/-- An affinoid rigid space is locally affinoid. -/
+theorem isLocallyAffinoid_ofAffinoid {A : Type v} [CommRing A] [Algebra K A]
+    (hA : IsAffinoidAlgebra K A) : IsLocallyAffinoid K (ofAffinoid K hA) := sorry
+
+/-- An affinoid rigid space is quasi-separated. -/
+theorem isQuasiSeparated_ofAffinoid {A : Type v} [CommRing A] [Algebra K A]
+    (hA : IsAffinoidAlgebra K A) : IsQuasiSeparated K (ofAffinoid K hA) := sorry
+
+/-- An affinoid rigid space satisfies the comparison finiteness condition. -/
+theorem isParacompact_ofAffinoid {A : Type v} [CommRing A] [Algebra K A]
+    (hA : IsAffinoidAlgebra K A) : IsParacompact K (ofAffinoid K hA) := sorry
+
+/-- An affinoid rigid space is separated. -/
+theorem isSeparated_ofAffinoid {A : Type v} [CommRing A] [Algebra K A]
+    (hA : IsAffinoidAlgebra K A) : IsSeparated K (ofAffinoid K hA) := sorry
+
 end RigidSpace
 
 /-- A Berkovich analytic space over `K`, locally modeled on Berkovich spectra of affinoid
@@ -685,6 +794,27 @@ noncomputable instance berkovichSpaceCategory : Category.{u + 1} (BerkovichSpace
 
 namespace BerkovichSpace
 
+/-- The underlying type of points of a Berkovich space. -/
+def Point (X : BerkovichSpace K) : Type (u + 1) := sorry
+
+/-- The canonical topology on the points of a Berkovich space. -/
+noncomputable instance pointTopologicalSpace (X : BerkovichSpace K) :
+    TopologicalSpace (Point K X) := sorry
+
+/-- An affinoid domain in a Berkovich space. -/
+def AffinoidDomain (X : BerkovichSpace K) : Type (u + 1) := sorry
+
+namespace AffinoidDomain
+
+/-- The set of points belonging to an affinoid domain. -/
+noncomputable def carrier {X : BerkovichSpace K} (U : AffinoidDomain K X) :
+    Set (Point K X) := sorry
+
+/-- An affinoid domain is modeled on a strict affinoid algebra. -/
+def IsStrict {X : BerkovichSpace K} (U : AffinoidDomain K X) : Prop := sorry
+
+end AffinoidDomain
+
 /-- Every point has an affinoid neighborhood. -/
 def IsGood (X : BerkovichSpace K) : Prop := sorry
 
@@ -696,6 +826,66 @@ def IsParacompact (X : BerkovichSpace K) : Prop := sorry
 
 /-- The underlying topological space is Hausdorff. -/
 def IsHausdorff (X : BerkovichSpace K) : Prop := sorry
+
+/-- Goodness means that every point lies in the interior of an affinoid domain. -/
+theorem isGood_iff (X : BerkovichSpace K) :
+    IsGood K X ↔ ∀ x : Point K X, ∃ U : AffinoidDomain K X, x ∈ interior U.carrier := sorry
+
+/-- Strictness means that every point belongs to a strict affinoid domain. -/
+theorem isStrict_iff (X : BerkovichSpace K) :
+    IsStrict K X ↔ ∀ x : Point K X, ∃ U : AffinoidDomain K X,
+      x ∈ U.carrier ∧ U.IsStrict := sorry
+
+/-- Berkovich paracompactness agrees with paracompactness of the underlying point-set topology. -/
+theorem isParacompact_iff (X : BerkovichSpace K) :
+    IsParacompact K X ↔ ParacompactSpace (Point K X) := sorry
+
+/-- Berkovich Hausdorffness agrees with the Hausdorff property of the point-set topology. -/
+theorem isHausdorff_iff (X : BerkovichSpace K) :
+    IsHausdorff K X ↔ T2Space (Point K X) := sorry
+
+/-- Goodness is invariant under analytic isomorphism. -/
+theorem isGood_iff_of_iso {X Y : BerkovichSpace K} (e : X ≅ Y) :
+    IsGood K X ↔ IsGood K Y := sorry
+
+/-- Strictness is invariant under analytic isomorphism. -/
+theorem isStrict_iff_of_iso {X Y : BerkovichSpace K} (e : X ≅ Y) :
+    IsStrict K X ↔ IsStrict K Y := sorry
+
+/-- Paracompactness is invariant under analytic isomorphism. -/
+theorem isParacompact_iff_of_iso {X Y : BerkovichSpace K} (e : X ≅ Y) :
+    IsParacompact K X ↔ IsParacompact K Y := sorry
+
+/-- Hausdorffness is invariant under analytic isomorphism. -/
+theorem isHausdorff_iff_of_iso {X Y : BerkovichSpace K} (e : X ≅ Y) :
+    IsHausdorff K X ↔ IsHausdorff K Y := sorry
+
+/-- The Berkovich space associated to a strict affinoid algebra. -/
+noncomputable def ofAffinoid {A : Type v} [CommRing A] [Algebra K A]
+    (hA : IsAffinoidAlgebra K A) : BerkovichSpace K := sorry
+
+/-- The points of an affinoid Berkovich space form its Berkovich spectrum. -/
+noncomputable def pointsOfAffinoidHomeomorph {A : Type v} [CommRing A] [Algebra K A]
+    (hA : IsAffinoidAlgebra K A) :
+    Point K (ofAffinoid K hA) ≃ₜ
+      (letI : NormedCommRing A := hA.presentation.residueNormedCommRing K A
+       BerkovichSpectrum A) := sorry
+
+/-- An affinoid Berkovich space is good. -/
+theorem isGood_ofAffinoid {A : Type v} [CommRing A] [Algebra K A]
+    (hA : IsAffinoidAlgebra K A) : IsGood K (ofAffinoid K hA) := sorry
+
+/-- An affinoid Berkovich space is strict. -/
+theorem isStrict_ofAffinoid {A : Type v} [CommRing A] [Algebra K A]
+    (hA : IsAffinoidAlgebra K A) : IsStrict K (ofAffinoid K hA) := sorry
+
+/-- An affinoid Berkovich space is paracompact. -/
+theorem isParacompact_ofAffinoid {A : Type v} [CommRing A] [Algebra K A]
+    (hA : IsAffinoidAlgebra K A) : IsParacompact K (ofAffinoid K hA) := sorry
+
+/-- An affinoid Berkovich space is Hausdorff. -/
+theorem isHausdorff_ofAffinoid {A : Type v} [CommRing A] [Algebra K A]
+    (hA : IsAffinoidAlgebra K A) : IsHausdorff K (ofAffinoid K hA) := sorry
 
 end BerkovichSpace
 
@@ -714,6 +904,36 @@ abbrev ComparisonRigidSpace := (rigidComparisonProperty K).FullSubcategory
 
 /-- The full subcategory of Berkovich spaces in the provisional comparison range. -/
 abbrev ComparisonBerkovichSpace := (berkovichComparisonProperty K).FullSubcategory
+
+/-- The rigid comparison property is invariant under analytic isomorphism. -/
+theorem rigidComparisonProperty_isClosedUnderIsomorphisms :
+    (rigidComparisonProperty K).IsClosedUnderIsomorphisms := sorry
+
+/-- The Berkovich comparison property is invariant under analytic isomorphism. -/
+theorem berkovichComparisonProperty_isClosedUnderIsomorphisms :
+    (berkovichComparisonProperty K).IsClosedUnderIsomorphisms := sorry
+
+/-- An affinoid algebra gives an object of the rigid comparison subcategory. -/
+noncomputable def comparisonRigidSpaceOfAffinoid {A : Type v} [CommRing A] [Algebra K A]
+    (hA : IsAffinoidAlgebra K A) : ComparisonRigidSpace K := sorry
+
+/-- An affinoid algebra gives an object of the Berkovich comparison subcategory. -/
+noncomputable def comparisonBerkovichSpaceOfAffinoid {A : Type v} [CommRing A] [Algebra K A]
+    (hA : IsAffinoidAlgebra K A) : ComparisonBerkovichSpace K := sorry
+
+/-- The rigid comparison subcategory is nonempty. -/
+theorem nonempty_comparisonRigidSpace : Nonempty (ComparisonRigidSpace K) := sorry
+
+/-- The Berkovich comparison subcategory is nonempty. -/
+theorem nonempty_comparisonBerkovichSpace : Nonempty (ComparisonBerkovichSpace K) := sorry
+
+/-- The rigid comparison subcategory has nonisomorphic objects. -/
+theorem exists_nonisomorphic_comparisonRigidSpaces :
+    ∃ X Y : ComparisonRigidSpace K, ¬ Nonempty (X ≅ Y) := sorry
+
+/-- The Berkovich comparison subcategory has nonisomorphic objects. -/
+theorem exists_nonisomorphic_comparisonBerkovichSpaces :
+    ∃ X Y : ComparisonBerkovichSpace K, ¬ Nonempty (X ≅ Y) := sorry
 
 /-- The comparison functor from rigid spaces to Berkovich spaces. -/
 noncomputable def rigidToBerkovich : ComparisonRigidSpace K ⥤ ComparisonBerkovichSpace K := sorry

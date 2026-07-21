@@ -148,7 +148,11 @@ conventions. In particular, verify:
 - whether Hausdorff/separated objects form the main equivalence or a restricted corollary.
 
 Until these are settled, the comparison declarations are useful dependency targets rather than a
-canonical theorem statement.
+canonical theorem statement. The comparator nevertheless constrains provisional global-space
+implementations through point and affinoid-domain APIs, geometric characterizations of each object
+property, invariance under analytic isomorphism, affinoid examples, and explicit nonvacuity and
+nontriviality of both comparison subcategories. This rules out the empty/trivial-category shortcut
+and forces constant-predicate implementations to satisfy concrete geometric characterizations.
 
 ## Proposed file layout after the API stabilizes
 
