@@ -29,8 +29,8 @@ Reuse `MvPowerSeries.IsRestricted` from mathlib for the underlying restricted po
 
 1. Define coordinates and the Gauss norm. **Done** (`TateAlgebra/Basic`, `TateAlgebra/GaussNorm`).
 2. Construct the normed commutative `K`-algebra structure. **Done** (`TateAlgebra/NormedRing`).
-3. Prove the ultrametric inequality (**done**), multiplicativity of the Gauss norm, and
-   completeness.
+3. Prove the ultrametric inequality (**done**), completeness (**done**, `TateAlgebra/Complete`;
+   finiteness of the variable set was not needed), and multiplicativity of the Gauss norm.
 4. Prove density of polynomials and the universal property for tuples of norm at most one.
    **Done** (`TateAlgebra/NormedRing`, `TateAlgebra/UniversalProperty`); neither completeness of `K`
    nor finiteness of the variable set was needed.
@@ -62,6 +62,16 @@ of the presentation, while the residue norm itself may depend on it. For any com
 nonarchimedean normed realization, `exists_equivalent_quotientNorm_presentation_of_isAffinoidAlgebra`
 records equivalence with a presentation quotient norm. `IsQuotientNorm` remains available for the
 exact residue norm attached to a chosen presentation.
+
+The transport of the topology is implemented (`AffinoidAlgebra/QuotientTopology`): the topology
+coinduced by a surjective homomorphism out of a topological ring is a ring topology with
+continuous scalar multiplication, which settles `toAlgHom_surjective`,
+`residueIsTopologicalRing`, `residueContinuousSMul`, and their affinoid corollaries.
+Presentation-independence of the topology and the bundled residue norm remain open: both need
+closedness of ideals in Tate algebras and automatic continuity (Tate's theorem together with the
+Banach open mapping machinery — BGR 3.7.5 and 6.1.1, or the finite-module completeness
+propositions in Kato's book). In particular the residue norm is a genuine norm only because
+kernels of presentations are closed, which is part of that machinery.
 
 The rational-localization interface follows the unit-radius construction
 `A⟨T₁, ..., Tₙ⟩ / (gTᵢ - fᵢ)`. `IsRationalDatum g f` records that `g` and the `fᵢ` generate the unit
