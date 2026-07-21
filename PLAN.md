@@ -43,10 +43,11 @@ carefully chosen maximal coefficient argument rather than only generic norm esti
 5. Define rational and Weierstrass localizations and prove their universal properties.
 6. Prove invariance under equivalent admissible Banach norms.
 
-The current `IsAffinoidAlgebra` predicate requires a finite Tate-algebra presentation whose target
-norm is exactly the quotient norm, via `IsQuotientNorm`. A later generalization may package
-arbitrary admissible Banach norms equivalent to a quotient norm, but it must retain an explicit
-connection to a quotient presentation.
+The current `IsAffinoidAlgebra` predicate asks only for a continuous surjection from a finite Tate
+algebra. The Banach open mapping theorem then makes the target norm equivalent to the induced
+quotient norm; `exists_equivalent_quotientNorm_presentation_of_isAffinoidAlgebra` records this
+consequence. `IsQuotientNorm` remains available for presentations whose chosen norm is exactly the
+fiberwise infimum.
 
 ### 3. Affinoid geometry
 

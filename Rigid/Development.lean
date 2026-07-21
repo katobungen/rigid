@@ -100,14 +100,31 @@ end TateAlgebra
 
 section QuotientNorm
 
-variable {B : Type v} [SeminormedAddCommGroup B]
-variable {C : Type w} [SeminormedAddCommGroup C]
+variable {B : Type v} [hB : SeminormedAddCommGroup B]
+variable {C : Type w}
 
-/-- A map is a quotient-norm presentation when it is surjective and the norm of every target
-element is the infimum of the norms of all its preimages. -/
+include hB
+
+/-- The quotient seminorm induced by a map, defined as the infimum of source norms in a fiber.
+It has the expected behavior when the map is surjective. -/
+noncomputable def quotientNorm (f : B → C) (y : C) : ℝ :=
+  Rigid.quotientNorm f y
+
+variable [hC : SeminormedAddCommGroup C]
+
+include hC
+
+/-- A map is a quotient-norm presentation when it is surjective and the given target norm is exactly
+the induced quotient norm. -/
 def IsQuotientNorm (f : B → C) : Prop :=
+  Function.Surjective f ∧ ∀ y : C, ‖y‖ = quotientNorm f y
+
+/-- The target norm is equivalent to the induced quotient norm when the map is surjective and the
+two norms bound one another up to positive multiplicative constants. -/
+def IsEquivalentQuotientNorm (f : B → C) : Prop :=
   Function.Surjective f ∧
-    ∀ y : C, ‖y‖ = sInf ((fun x : B ↦ ‖x‖) '' {x | f x = y})
+    ∃ c₁ c₂ : ℝ, 0 < c₁ ∧ 0 < c₂ ∧
+      ∀ y : C, c₁ * quotientNorm f y ≤ ‖y‖ ∧ ‖y‖ ≤ c₂ * quotientNorm f y
 
 namespace IsQuotientNorm
 
@@ -116,6 +133,11 @@ variable {f : B → C}
 /-- A quotient-norm presentation is surjective. -/
 theorem surjective (hf : IsQuotientNorm f) : Function.Surjective f :=
   Rigid.IsQuotientNorm.surjective hf
+
+/-- The target norm equals the induced quotient norm. -/
+theorem norm_eq_quotientNorm (hf : IsQuotientNorm f) (y : C) :
+    ‖y‖ = quotientNorm f y :=
+  Rigid.IsQuotientNorm.norm_eq_quotientNorm hf y
 
 /-- The target norm is the infimum of the source norms in each fiber. -/
 theorem norm_eq_sInf_fiber (hf : IsQuotientNorm f) (y : C) :
@@ -131,9 +153,47 @@ theorem exists_preimage_norm_lt (hf : IsQuotientNorm f) {ε : ℝ} (hε : 0 < ε
     ∃ x : B, f x = y ∧ ‖x‖ < ‖y‖ + ε :=
   Rigid.IsQuotientNorm.exists_preimage_norm_lt hf hε y
 
+/-- Exact equality with the quotient norm implies equivalence with it. -/
+theorem isEquivalentQuotientNorm (hf : IsQuotientNorm f) :
+    IsEquivalentQuotientNorm f :=
+  Rigid.IsQuotientNorm.isEquivalentQuotientNorm hf
+
 end IsQuotientNorm
 
+namespace IsEquivalentQuotientNorm
+
+variable {f : B → C}
+
+/-- Equivalence with a quotient norm includes surjectivity. -/
+theorem surjective (hf : IsEquivalentQuotientNorm f) : Function.Surjective f :=
+  Rigid.IsEquivalentQuotientNorm.surjective hf
+
+end IsEquivalentQuotientNorm
+
 end QuotientNorm
+
+section OpenMapping
+
+variable {K : Type u} [NontriviallyNormedField K]
+variable {B : Type v} [NormedAddCommGroup B] [NormedSpace K B] [CompleteSpace B]
+variable {C : Type w} [NormedAddCommGroup C] [NormedSpace K C] [CompleteSpace C]
+
+/-- A surjective continuous linear map between Banach spaces makes the given target norm equivalent
+to the quotient norm. -/
+theorem isEquivalentQuotientNorm_of_surjective (f : B →L[K] C) (hf : Function.Surjective f) :
+    IsEquivalentQuotientNorm (f : B → C) :=
+  Rigid.isEquivalentQuotientNorm_of_surjective f hf
+
+/-- A surjective continuous algebra homomorphism between Banach algebras gives an equivalent
+quotient norm on its target. -/
+theorem isEquivalentQuotientNorm_of_surjective_continuousAlgHom
+    {B : Type v} [NormedCommRing B] [NormedAlgebra K B] [CompleteSpace B]
+    {C : Type w} [NormedCommRing C] [NormedAlgebra K C] [CompleteSpace C]
+    (f : ContinuousAlgHom K B C) (hf : Function.Surjective f) :
+    IsEquivalentQuotientNorm (f : B → C) :=
+  Rigid.isEquivalentQuotientNorm_of_surjective_continuousAlgHom f hf
+
+end OpenMapping
 
 /-! ## Affinoid algebras and affinoid spectra -/
 
@@ -143,17 +203,23 @@ variable (K : Type u) [NontriviallyNormedField K] [CompleteSpace K] [IsUltrametr
 variable (A : Type v) [NormedCommRing A] [NormedAlgebra K A] [CompleteSpace A]
   [IsUltrametricDist A]
 
-/-- A strict `K`-affinoid algebra admits a presentation by a Tate algebra in finitely many
-variables for which the given norm on `A` is exactly the quotient norm. -/
+/-- A strict `K`-affinoid algebra admits a continuous surjection from a Tate algebra in finitely
+many variables. By the Banach open mapping theorem, its given norm is then equivalent to the
+quotient norm associated to this presentation. -/
 def IsAffinoidAlgebra : Prop :=
-  ∃ (n : ℕ) (π : ContinuousAlgHom K (TateAlgebra K (Fin n)) A),
-    IsQuotientNorm (π : TateAlgebra K (Fin n) → A)
+  ∃ (n : ℕ) (π : ContinuousAlgHom K (TateAlgebra K (Fin n)) A), Function.Surjective π
 
-/-- Unpack an affinoid algebra as a quotient-norm presentation by a finite Tate algebra. -/
-theorem exists_quotient_presentation_of_isAffinoidAlgebra (hA : IsAffinoidAlgebra K A) :
-    ∃ (n : ℕ) (π : ContinuousAlgHom K (TateAlgebra K (Fin n)) A),
-      IsQuotientNorm (π : TateAlgebra K (Fin n) → A) :=
+/-- Unpack an affinoid algebra as a surjective presentation by a finite Tate algebra. -/
+theorem exists_surjective_presentation_of_isAffinoidAlgebra (hA : IsAffinoidAlgebra K A) :
+    ∃ (n : ℕ) (π : ContinuousAlgHom K (TateAlgebra K (Fin n)) A), Function.Surjective π :=
   hA
+
+/-- The norm of an affinoid algebra is equivalent to the quotient norm induced by a finite Tate
+algebra presentation. -/
+theorem exists_equivalent_quotientNorm_presentation_of_isAffinoidAlgebra
+    (hA : IsAffinoidAlgebra K A) :
+    ∃ (n : ℕ) (π : ContinuousAlgHom K (TateAlgebra K (Fin n)) A),
+      IsEquivalentQuotientNorm (π : TateAlgebra K (Fin n) → A) := sorry
 
 /-- Every algebra homomorphism between strict affinoid algebras is continuous. -/
 theorem continuous_of_isAffinoidAlgebra
