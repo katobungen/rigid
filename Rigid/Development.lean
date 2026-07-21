@@ -1,4 +1,5 @@
 import Mathlib
+import Rigid.AffinoidAlgebra.Basic
 import Rigid.AffinoidAlgebra.QuotientNorm
 import Rigid.AffinoidAlgebra.QuotientTopology
 import Rigid.AffinoidAlgebra.RationalDatum
@@ -366,7 +367,8 @@ theorem affinoidContinuousSMul (hA : IsAffinoidAlgebra K A) :
 
 /-- The canonical topology agrees with the quotient topology from every presentation. -/
 theorem affinoidTopology_eq_residueTopology (hA : IsAffinoidAlgebra K A)
-    (P : AffinoidPresentation K A) : affinoidTopology K A hA = P.residueTopology := sorry
+    (P : AffinoidPresentation K A) : affinoidTopology K A hA = P.residueTopology :=
+  AffinoidPresentation.residueTopology_eq K A hA.presentation P
 
 /-- Algebra homomorphisms between affinoid algebras are continuous for their canonical quotient
 topologies. -/
