@@ -51,7 +51,10 @@ its values on the coordinates.
 1. Define quotient seminorms and prove completeness after quotienting by a closed ideal.
 2. Bundle strict affinoid `K`-algebras and bounded/continuous homomorphisms.
 3. Prove that algebra homomorphisms between affinoid algebras are continuous.
-4. Prove Noetherianity (Tate's theorem).
+4. Prove Noetherianity (Tate's theorem). **Done** (`TateAlgebra/Leading`, `TateAlgebra/Division`,
+   `TateAlgebra/Noetherian`): the division algorithm and standard bases from Kato's Appendix B
+   give `IsNoetherianRing (TateAlgebra K ι)` for finite `ι`, and affinoid algebras inherit
+   Noetherianity through their quotient presentations.
 5. Define rational and Weierstrass localizations and prove their universal properties.
 6. Prove invariance under equivalent admissible Banach norms.
 
