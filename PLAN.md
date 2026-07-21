@@ -62,6 +62,16 @@ nonarchimedean normed realization, `exists_equivalent_quotientNorm_presentation_
 records equivalence with a presentation quotient norm. `IsQuotientNorm` remains available for the
 exact residue norm attached to a chosen presentation.
 
+The transport of the topology is implemented (`AffinoidAlgebra/QuotientTopology`): the topology
+coinduced by a surjective homomorphism out of a topological ring is a ring topology with
+continuous scalar multiplication, which settles `toAlgHom_surjective`,
+`residueIsTopologicalRing`, `residueContinuousSMul`, and their affinoid corollaries.
+Presentation-independence of the topology and the bundled residue norm remain open: both need
+closedness of ideals in Tate algebras and automatic continuity (Tate's theorem together with the
+Banach open mapping machinery — BGR 3.7.5 and 6.1.1, or the finite-module completeness
+propositions in Kato's book). In particular the residue norm is a genuine norm only because
+kernels of presentations are closed, which is part of that machinery.
+
 The rational-localization interface follows the unit-radius construction
 `A⟨T₁, ..., Tₙ⟩ / (gTᵢ - fᵢ)`. `IsRationalDatum g f` records that `g` and the `fᵢ` generate the unit
 ideal. Coordinates are required to be power-bounded rather than to have norm at most one, so the

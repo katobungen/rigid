@@ -1,5 +1,6 @@
 import Mathlib
 import Rigid.AffinoidAlgebra.QuotientNorm
+import Rigid.AffinoidAlgebra.QuotientTopology
 import Rigid.AffinoidAlgebra.RationalDatum
 import Rigid.TateAlgebra.UniversalProperty
 
@@ -275,7 +276,8 @@ noncomputable def toAlgHom (P : AffinoidPresentation K A) :
 
 /-- The algebra homomorphism associated with an affinoid presentation is surjective. -/
 theorem toAlgHom_surjective (P : AffinoidPresentation K A) :
-    Function.Surjective P.toAlgHom := sorry
+    Function.Surjective P.toAlgHom :=
+  P.equiv.surjective.comp (Ideal.Quotient.mkₐ_surjective K P.ideal)
 
 /-- The quotient topology transported to the target of an affinoid presentation. -/
 @[reducible]
@@ -288,11 +290,14 @@ theorem residueTopology_eq (P Q : AffinoidPresentation K A) :
 
 /-- The quotient topology makes the target a topological ring. -/
 theorem residueIsTopologicalRing (P : AffinoidPresentation K A) :
-    @IsTopologicalRing A P.residueTopology _ := sorry
+    @IsTopologicalRing A P.residueTopology _ :=
+  Rigid.isTopologicalRing_coinduced P.toAlgHom (toAlgHom_surjective K A P)
 
 /-- Scalar multiplication by the ground field is continuous for the quotient topology. -/
 theorem residueContinuousSMul (P : AffinoidPresentation K A) :
-    @ContinuousSMul K A _ _ P.residueTopology := sorry
+    @ContinuousSMul K A _ _ P.residueTopology :=
+  Rigid.continuousSMul_coinduced P.toAlgHom (toAlgHom_surjective K A P)
+    fun c x ↦ map_smul P.toAlgHom c x
 
 /-- The residue norm associated with an affinoid presentation, bundled as a normed commutative ring
 structure. Unlike the induced topology, this norm can depend on the presentation. -/
@@ -350,11 +355,13 @@ noncomputable def affinoidTopology (hA : IsAffinoidAlgebra K A) : TopologicalSpa
 
 /-- The canonical topology makes an affinoid algebra a topological ring. -/
 theorem affinoidIsTopologicalRing (hA : IsAffinoidAlgebra K A) :
-    @IsTopologicalRing A (affinoidTopology K A hA) _ := sorry
+    @IsTopologicalRing A (affinoidTopology K A hA) _ :=
+  AffinoidPresentation.residueIsTopologicalRing K A hA.presentation
 
 /-- Scalar multiplication by the ground field is continuous for the canonical topology. -/
 theorem affinoidContinuousSMul (hA : IsAffinoidAlgebra K A) :
-    @ContinuousSMul K A _ _ (affinoidTopology K A hA) := sorry
+    @ContinuousSMul K A _ _ (affinoidTopology K A hA) :=
+  AffinoidPresentation.residueContinuousSMul K A hA.presentation
 
 /-- The canonical topology agrees with the quotient topology from every presentation. -/
 theorem affinoidTopology_eq_residueTopology (hA : IsAffinoidAlgebra K A)
@@ -370,12 +377,15 @@ theorem continuous_for_affinoidTopology_of_isAffinoidAlgebra
 
 /-- Unpack an affinoid algebra as a surjective algebraic presentation by a finite Tate algebra. -/
 theorem exists_surjective_presentation_of_isAffinoidAlgebra (hA : IsAffinoidAlgebra K A) :
-    ∃ (n : ℕ) (π : TateAlgebra K (Fin n) →ₐ[K] A), Function.Surjective π := sorry
+    ∃ (n : ℕ) (π : TateAlgebra K (Fin n) →ₐ[K] A), Function.Surjective π :=
+  ⟨hA.presentation.n, hA.presentation.toAlgHom,
+    AffinoidPresentation.toAlgHom_surjective K A hA.presentation⟩
 
 /-- Unpack the defining quotient presentation of an affinoid algebra. -/
 theorem exists_quotient_presentation_of_isAffinoidAlgebra (hA : IsAffinoidAlgebra K A) :
     ∃ (n : ℕ) (I : Ideal (TateAlgebra K (Fin n))),
-      Nonempty ((TateAlgebra K (Fin n) ⧸ I) ≃ₐ[K] A) := sorry
+      Nonempty ((TateAlgebra K (Fin n) ⧸ I) ≃ₐ[K] A) :=
+  ⟨hA.presentation.n, hA.presentation.ideal, ⟨hA.presentation.equiv⟩⟩
 
 /-- Affinoid algebras are Noetherian. -/
 theorem isNoetherianRing_of_isAffinoidAlgebra (hA : IsAffinoidAlgebra K A) :
