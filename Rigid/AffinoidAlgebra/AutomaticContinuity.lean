@@ -1,5 +1,6 @@
 import Mathlib
 import Rigid.AffinoidAlgebra.Basic
+import Rigid.AffinoidAlgebra.NoetherNormalization
 import Rigid.TateAlgebra.Complete
 import Rigid.TateAlgebra.Noetherian
 
@@ -229,7 +230,9 @@ private theorem continuous_linearMap_of_seq_closed_graph
 Proposition 1.4.11: residue fields at maximal ideals are finite over the ground field. -/
 private theorem finite_residueField_of_maximal_isAffinoidAlgebra
     {B : Type w} [CommRing B] [Algebra K B] (hB : IsAffinoidAlgebra K B)
-    (m : Ideal B) (hm : m.IsMaximal) : Module.Finite K (B ⧸ m) := sorry
+    (m : Ideal B) (hm : m.IsMaximal) : Module.Finite K (B ⧸ m) :=
+  finite_of_isField_of_isAffinoidAlgebra K (IsAffinoidAlgebra.quotient K hB m)
+    ((Ideal.Quotient.maximal_ideal_iff_isField_quotient m).mp hm)
 
 /-- Powers of maximal ideals have finite-dimensional quotient. -/
 private theorem finite_quotient_maximal_pow_of_isAffinoidAlgebra
