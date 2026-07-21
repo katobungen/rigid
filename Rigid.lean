@@ -6,6 +6,9 @@ import Rigid.Berkovich.Spectrum
 import Rigid.Development
 import Rigid.TateAlgebra.Basic
 import Rigid.TateAlgebra.Complete
+import Rigid.TateAlgebra.Division
 import Rigid.TateAlgebra.GaussNorm
+import Rigid.TateAlgebra.Leading
 import Rigid.TateAlgebra.NormedRing
+import Rigid.TateAlgebra.Noetherian
 import Rigid.TateAlgebra.UniversalProperty

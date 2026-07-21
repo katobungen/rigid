@@ -5,6 +5,7 @@ import Rigid.AffinoidAlgebra.QuotientNorm
 import Rigid.AffinoidAlgebra.QuotientTopology
 import Rigid.AffinoidAlgebra.RationalDatum
 import Rigid.TateAlgebra.Complete
+import Rigid.TateAlgebra.Noetherian
 import Rigid.TateAlgebra.UniversalProperty
 
 set_option linter.style.header false
@@ -393,7 +394,11 @@ theorem exists_quotient_presentation_of_isAffinoidAlgebra (hA : IsAffinoidAlgebr
 
 /-- Affinoid algebras are Noetherian. -/
 theorem isNoetherianRing_of_isAffinoidAlgebra (hA : IsAffinoidAlgebra K A) :
-    IsNoetherianRing A := sorry
+    IsNoetherianRing A := by
+  obtain ⟨n, I, ⟨e⟩⟩ := exists_quotient_presentation_of_isAffinoidAlgebra K A hA
+  haveI : IsNoetherianRing (TateAlgebra K (Fin n) ⧸ I) :=
+    isNoetherianRing_of_surjective _ _ (Ideal.Quotient.mk I) Ideal.Quotient.mk_surjective
+  exact isNoetherianRing_of_ringEquiv _ e.toRingEquiv
 
 end Algebraic
 
