@@ -1,6 +1,7 @@
 import Mathlib
 import Rigid.AffinoidAlgebra.Basic
 import Rigid.TateAlgebra.Complete
+import Rigid.TateAlgebra.Noetherian
 
 set_option linter.style.header false
 
@@ -19,82 +20,166 @@ open scoped Topology
 
 namespace Rigid
 
+open TateAlgebra
+
 section
 
 variable (K : Type u) [NontriviallyNormedField K] [CompleteSpace K] [IsUltrametricDist K]
 variable (A : Type v) [CommRing A] [Algebra K A]
 
-private theorem residueTopology_eq (P Q : AffinoidPresentation K A) :
-    P.residueTopology = Q.residueTopology := sorry
+private theorem tateAlgebra_ideal_isClosed {n : ℕ}
+    (I : Ideal (TateAlgebra K (Fin n))) : IsClosed (I : Set (TateAlgebra K (Fin n))) := by
+  classical
+  let m : MonomialOrder (Fin n) := MonomialOrder.lex
+  let L : Set (Fin n →₀ ℕ) :=
+    (fun f ↦ leadingDegree m f) '' {f : TateAlgebra K (Fin n) | f ∈ I ∧ f ≠ 0}
+  obtain ⟨T, hTL, hdom⟩ := TateAlgebra.exists_finset_dominating L
+  have hchoice : ∀ t : {x // x ∈ T}, ∃ g : TateAlgebra K (Fin n),
+      g ∈ I ∧ g ≠ 0 ∧ leadingDegree m g = t.1 := by
+    intro t
+    obtain ⟨g, hg, hgdeg⟩ := hTL t.2
+    exact ⟨g, hg.1, hg.2, hgdeg⟩
+  choose g hgI hgne hgdeg using hchoice
+  rw [← isOpen_compl_iff, Metric.isOpen_iff]
+  intro F hF
+  obtain ⟨Q, hQ⟩ := exists_forall_coeff_eq_zero_of_leadingDegree_le m g hgne F
+  let R : TateAlgebra K (Fin n) := F - ∑ t, Q t * g t
+  have hRne : R ≠ 0 := by
+    intro hR
+    apply hF
+    rw [Set.mem_compl_iff] at hF
+    have hFI : F = ∑ t, Q t * g t := sub_eq_zero.mp hR
+    rw [hFI]
+    exact Submodule.sum_mem I fun t _ ↦ I.mul_mem_left _ (hgI t)
+  refine ⟨‖R‖, norm_pos_iff.mpr hRne, ?_⟩
+  intro H hHF hHI
+  rw [Set.mem_compl_iff] at hF
+  have hHdist : ‖H - F‖ < ‖R‖ := by
+    simpa [Metric.mem_ball, dist_eq_norm] using hHF
+  let S : TateAlgebra K (Fin n) := H - ∑ t, Q t * g t
+  have hSI : S ∈ I := I.sub_mem hHI (Submodule.sum_mem I fun t _ ↦ I.mul_mem_left _ (hgI t))
+  have hSR : ‖S - R‖ < ‖R‖ := by
+    simpa [S, R, sub_sub_sub_cancel_right] using hHdist
+  have hSnorm : ‖S‖ = ‖R‖ := by
+    have hSR' : ‖S + -R‖ < max ‖S‖ ‖-R‖ := by
+      calc
+        ‖S + -R‖ = ‖S - R‖ := by rw [sub_eq_add_neg]
+        _ < ‖R‖ := hSR
+        _ = ‖-R‖ := norm_neg R |>.symm
+        _ ≤ max ‖S‖ ‖-R‖ := le_max_right _ _
+    simpa using
+      (IsUltrametricDist.norm_eq_of_add_norm_lt_max (x := S) (y := -R) hSR')
+  have hSne : S ≠ 0 := by
+    rw [← norm_ne_zero_iff, hSnorm]
+    exact norm_ne_zero_iff.mpr hRne
+  obtain ⟨t, htT, htdeg⟩ := hdom (leadingDegree m S) ⟨S, ⟨hSI, hSne⟩, rfl⟩
+  let t' : {x // x ∈ T} := ⟨t, htT⟩
+  have hRcoeff : MvPowerSeries.coeff (leadingDegree m S) R.1 = 0 := by
+    exact hQ (leadingDegree m S) ⟨t', by simpa [t', hgdeg t'] using htdeg⟩
+  have hcoeff : ‖S‖ ≤ ‖S - R‖ := by
+    calc
+      ‖S‖ = ‖MvPowerSeries.coeff (leadingDegree m S) S.1‖ := (norm_leadingCoeff m hSne).symm
+      _ = ‖MvPowerSeries.coeff (leadingDegree m S) (S - R).1‖ := by
+        simp [hRcoeff]
+      _ ≤ ‖S - R‖ := norm_coeff_le_norm K (Fin n) (S - R) (leadingDegree m S)
+  exact (not_lt_of_ge (hSnorm ▸ hcoeff) hSR).elim
 
-private theorem affinoidTopology_eq_residueTopology (hA : IsAffinoidAlgebra K A)
-    (P : AffinoidPresentation K A) : affinoidTopology K A hA = P.residueTopology :=
-  residueTopology_eq K A hA.presentation P
-
-private theorem continuous_for_affinoidTopology_of_surjective
+private noncomputable def pushForwardPresentation
     {A : Type v} [CommRing A] [Algebra K A]
     {B : Type w} [CommRing B] [Algebra K B]
-    (hA : IsAffinoidAlgebra K A) (hB : IsAffinoidAlgebra K B) (f : A →ₐ[K] B)
-    (hf : Function.Surjective f) :
-    @Continuous A B (affinoidTopology K A hA) (affinoidTopology K B hB) f := by
-  let P := hA.presentation
+    (P : AffinoidPresentation K A) (f : A →ₐ[K] B) (hf : Function.Surjective f) :
+    AffinoidPresentation K B := by
   let g : TateAlgebra K (Fin P.n) →ₐ[K] B := f.comp P.toAlgHom
   have hg : Function.Surjective g := hf.comp P.toAlgHom_surjective
-  let Q : AffinoidPresentation K B :=
+  exact
     { n := P.n
       ideal := RingHom.ker g
       equiv := Ideal.quotientKerAlgEquivOfSurjective hg }
+
+private theorem continuous_for_residueTopology_of_surjective
+    {A : Type v} [CommRing A] [Algebra K A]
+    {B : Type w} [CommRing B] [Algebra K B]
+    (P : AffinoidPresentation K A) (f : A →ₐ[K] B) (hf : Function.Surjective f) :
+    @Continuous A B P.residueTopology (pushForwardPresentation K P f hf).residueTopology f := by
+  let g : TateAlgebra K (Fin P.n) →ₐ[K] B := f.comp P.toAlgHom
+  let Q : AffinoidPresentation K B := pushForwardPresentation K P f hf
   have hQg : Q.toAlgHom = g := by
+    dsimp [Q, pushForwardPresentation]
     ext x
-    simp [AffinoidPresentation.toAlgHom, Q]
-  rw [affinoidTopology_eq_residueTopology K A hA P,
-    affinoidTopology_eq_residueTopology K B hB Q]
+    exact Ideal.quotientKerAlgEquivOfSurjective_mk (f := f.comp P.toAlgHom)
+      (hf.comp P.toAlgHom_surjective) x
   letI : TopologicalSpace A := P.residueTopology
   letI : TopologicalSpace B := Q.residueTopology
   change Continuous f
   have hP : IsOpenQuotientMap P.toAlgHom :=
     isOpenQuotientMap_coinduced P.toAlgHom P.toAlgHom_surjective
   apply hP.continuous_comp_iff.mp
-  simpa [Function.comp_def, g, hQg] using
-    (continuous_coinduced_rng : Continuous Q.toAlgHom)
+  have hQcont : Continuous Q.toAlgHom := continuous_coinduced_rng
+  rw [hQg] at hQcont
+  dsimp [Q, pushForwardPresentation] at hQcont
+  change Continuous (f.comp P.toAlgHom)
+  exact hQcont
 
-private theorem isAffinoidAlgebra_of_surjective
-    {A : Type v} [CommRing A] [Algebra K A]
-    {B : Type w} [CommRing B] [Algebra K B]
-    (hA : IsAffinoidAlgebra K A) (f : A →ₐ[K] B) (hf : Function.Surjective f) :
-    IsAffinoidAlgebra K B := by
+private theorem isNoetherianRing_of_isAffinoidAlgebra
+    {A : Type v} [CommRing A] [Algebra K A] (hA : IsAffinoidAlgebra K A) :
+    IsNoetherianRing A := by
   let P := hA.presentation
-  let g : TateAlgebra K (Fin P.n) →ₐ[K] B := f.comp P.toAlgHom
-  have hg : Function.Surjective g := hf.comp P.toAlgHom_surjective
-  exact ⟨
-    { n := P.n
-      ideal := RingHom.ker g
-      equiv := Ideal.quotientKerAlgEquivOfSurjective hg }⟩
+  haveI : IsNoetherianRing (TateAlgebra K (Fin P.n) ⧸ P.ideal) :=
+    isNoetherianRing_of_surjective _ _ (Ideal.Quotient.mk P.ideal)
+      Ideal.Quotient.mk_surjective
+  exact isNoetherianRing_of_ringEquiv _ P.equiv.toRingEquiv
 
 @[reducible]
 private noncomputable def compatibleResidueNormedAddCommGroup
-    (P : AffinoidPresentation K A) : NormedAddCommGroup A where
-  toNorm := sorry
-  toAddCommGroup := inferInstance
-  toMetricSpace := sorry
-  dist_eq := by sorry
+    (P : AffinoidPresentation K A) : NormedAddCommGroup A := by
+  letI : IsClosed (P.ideal : Set (TateAlgebra K (Fin P.n))) :=
+    tateAlgebra_ideal_isClosed K P.ideal
+  letI : NormedCommRing (TateAlgebra K (Fin P.n) ⧸ P.ideal) := inferInstance
+  letI : NormedCommRing A := NormedCommRing.induced A
+    (TateAlgebra K (Fin P.n) ⧸ P.ideal) P.equiv.symm.toRingHom P.equiv.symm.injective
+  infer_instance
 
 @[reducible]
 private noncomputable def compatibleResidueNormedSpace (P : AffinoidPresentation K A) :
     letI : NormedAddCommGroup A := compatibleResidueNormedAddCommGroup K A P
     NormedSpace K A := by
+  letI : IsClosed (P.ideal : Set (TateAlgebra K (Fin P.n))) :=
+    tateAlgebra_ideal_isClosed K P.ideal
+  letI : NormedCommRing (TateAlgebra K (Fin P.n) ⧸ P.ideal) := inferInstance
   letI : NormedAddCommGroup A := compatibleResidueNormedAddCommGroup K A P
-  exact
-    { toModule := inferInstance
-      norm_smul_le := by sorry }
+  exact NormedSpace.induced K A (TateAlgebra K (Fin P.n) ⧸ P.ideal)
+    P.equiv.symm.toLinearEquiv
 
 private theorem compatibleResidueCompleteSpace (P : AffinoidPresentation K A) :
     letI : NormedAddCommGroup A := compatibleResidueNormedAddCommGroup K A P
-    CompleteSpace A := sorry
+    CompleteSpace A := by
+  letI : IsClosed (P.ideal : Set (TateAlgebra K (Fin P.n))) :=
+    tateAlgebra_ideal_isClosed K P.ideal
+  letI : NormedCommRing (TateAlgebra K (Fin P.n) ⧸ P.ideal) := inferInstance
+  letI : NormedAddCommGroup A := compatibleResidueNormedAddCommGroup K A P
+  let e : A ≃ₗᵢ[K] (TateAlgebra K (Fin P.n) ⧸ P.ideal) :=
+    { P.equiv.symm.toLinearEquiv with norm_map' := fun _ ↦ rfl }
+  exact (completeSpace_congr (e := e.toEquiv) e.isometry.isUniformEmbedding).2 inferInstance
 
 private theorem compatibleResidueTopology_eq (P : AffinoidPresentation K A) :
     (letI : NormedAddCommGroup A := compatibleResidueNormedAddCommGroup K A P
-     inferInstance : TopologicalSpace A) = P.residueTopology := sorry
+     inferInstance : TopologicalSpace A) = P.residueTopology := by
+  letI : IsClosed (P.ideal : Set (TateAlgebra K (Fin P.n))) :=
+    tateAlgebra_ideal_isClosed K P.ideal
+  letI : NormedCommRing (TateAlgebra K (Fin P.n) ⧸ P.ideal) := inferInstance
+  change TopologicalSpace.induced P.equiv.symm inferInstance =
+    TopologicalSpace.coinduced P.toAlgHom inferInstance
+  calc
+    TopologicalSpace.induced P.equiv.symm
+        (inferInstance : TopologicalSpace (TateAlgebra K (Fin P.n) ⧸ P.ideal)) =
+      TopologicalSpace.coinduced P.equiv
+        (inferInstance : TopologicalSpace (TateAlgebra K (Fin P.n) ⧸ P.ideal)) :=
+      congrFun P.equiv.toEquiv.induced_symm _
+    _ = TopologicalSpace.coinduced P.toAlgHom inferInstance := by
+      change (TopologicalSpace.coinduced (Ideal.Quotient.mk P.ideal) inferInstance).coinduced
+        P.equiv = TopologicalSpace.coinduced P.toAlgHom inferInstance
+      rw [coinduced_compose]
+      rfl
 
 private theorem residueT2Space (P : AffinoidPresentation K A) :
     @T2Space A P.residueTopology := by
@@ -102,19 +187,17 @@ private theorem residueT2Space (P : AffinoidPresentation K A) :
   letI : NormedAddCommGroup A := compatibleResidueNormedAddCommGroup K A P
   infer_instance
 
-private theorem continuous_for_affinoidTopology_of_finite_codomain
+private theorem continuous_for_residueTopology_of_finite_codomain
     {A : Type v} [CommRing A] [Algebra K A]
     {B : Type w} [CommRing B] [Algebra K B] [Module.Finite K B]
-    (hA : IsAffinoidAlgebra K A) (hB : IsAffinoidAlgebra K B) (f : A →ₐ[K] B) :
-    @Continuous A B (affinoidTopology K A hA) (affinoidTopology K B hB) f := by
+    (PA : AffinoidPresentation K A) (PB : AffinoidPresentation K B) (f : A →ₐ[K] B) :
+    @Continuous A B PA.residueTopology PB.residueTopology f := by
   let C := f.range
   let q : A →ₐ[K] C := f.rangeRestrict
   have hq : Function.Surjective q := f.rangeRestrict_surjective
-  have hC : IsAffinoidAlgebra K C := isAffinoidAlgebra_of_surjective K hA q hq
-  have hqcont : @Continuous A C (affinoidTopology K A hA) (affinoidTopology K C hC) q :=
-    continuous_for_affinoidTopology_of_surjective K hA hC q hq
-  let PC := hC.presentation
-  let PB := hB.presentation
+  let PC : AffinoidPresentation K C := pushForwardPresentation K PA q hq
+  have hqcont : @Continuous A C PA.residueTopology PC.residueTopology q :=
+    continuous_for_residueTopology_of_surjective K PA q hq
   letI : NormedAddCommGroup C := compatibleResidueNormedAddCommGroup K C PC
   letI : NormedSpace K C := compatibleResidueNormedSpace K C PC
   letI : NormedAddCommGroup B := compatibleResidueNormedAddCommGroup K B PB
@@ -128,16 +211,12 @@ private theorem continuous_for_affinoidTopology_of_finite_codomain
   letI : ContinuousSMul K B := PB.residueContinuousSMul
   have hval : Continuous (f.range.val : C →ₐ[K] B) :=
     f.range.val.toLinearMap.continuous_of_finiteDimensional
-  have hval' : @Continuous C B (affinoidTopology K C hC) (affinoidTopology K B hB)
-      f.range.val := by
-    rw [affinoidTopology_eq_residueTopology K C hC PC,
-      affinoidTopology_eq_residueTopology K B hB PB]
-    exact hval
-  letI : TopologicalSpace A := affinoidTopology K A hA
-  letI : TopologicalSpace C := affinoidTopology K C hC
-  letI : TopologicalSpace B := affinoidTopology K B hB
-  exact hval'.comp hqcont
+  letI : TopologicalSpace A := PA.residueTopology
+  letI : TopologicalSpace C := PC.residueTopology
+  letI : TopologicalSpace B := PB.residueTopology
+  exact hval.comp hqcont
 
+omit [CompleteSpace K] [IsUltrametricDist K] in
 private theorem continuous_linearMap_of_seq_closed_graph
     {A : Type v} [NormedAddCommGroup A] [NormedSpace K A] [CompleteSpace A]
     {B : Type w} [NormedAddCommGroup B] [NormedSpace K B] [CompleteSpace B]
@@ -146,58 +225,99 @@ private theorem continuous_linearMap_of_seq_closed_graph
       Tendsto (f ∘ u) atTop (𝓝 y) → y = f x) : Continuous f :=
   f.continuous_of_seq_closed_graph hgraph
 
-/-- The Noether-normalization consequence used in Proposition 1.4.11: powers of maximal ideals
-have finite-dimensional quotient. -/
+/-- The affinoid Nullstellensatz consequence of Noether normalization used in
+Proposition 1.4.11: residue fields at maximal ideals are finite over the ground field. -/
+private theorem finite_residueField_of_maximal_isAffinoidAlgebra
+    {B : Type w} [CommRing B] [Algebra K B] (hB : IsAffinoidAlgebra K B)
+    (m : Ideal B) (hm : m.IsMaximal) : Module.Finite K (B ⧸ m) := sorry
+
+/-- Powers of maximal ideals have finite-dimensional quotient. -/
 private theorem finite_quotient_maximal_pow_of_isAffinoidAlgebra
     {B : Type w} [CommRing B] [Algebra K B] (hB : IsAffinoidAlgebra K B)
     (m : Ideal B) (hm : m.IsMaximal) (l : ℕ) (hl : 1 ≤ l) :
-    Module.Finite K (B ⧸ m ^ l) := sorry
+    Module.Finite K (B ⧸ m ^ l) := by
+  letI : IsNoetherianRing B := isNoetherianRing_of_isAffinoidAlgebra K hB
+  letI : IsNoetherianRing (B ⧸ m ^ l) :=
+    isNoetherianRing_of_surjective _ _ (Ideal.Quotient.mk (m ^ l))
+      Ideal.Quotient.mk_surjective
+  letI : Module.Finite K (B ⧸ m) :=
+    finite_residueField_of_maximal_isAffinoidAlgebra K hB m hm
+  have hpow : m ^ l ≤ m := Ideal.pow_le_self (Nat.ne_of_gt hl)
+  let q : (B ⧸ m ^ l) →ₐ[K] (B ⧸ m) := Ideal.Quotient.factorₐ K hpow
+  have hqkerFG : (RingHom.ker q).FG := IsNoetherian.noetherian _
+  refine Module.finite_of_surjective_of_ker_le_nilradical q
+    (Ideal.Quotient.factor_surjective hpow) ?_ hqkerFG
+  apply hqkerFG.isNilpotent_iff_le_nilradical.mp
+  use l
+  change RingHom.ker (Ideal.Quotient.factor hpow) ^ l = ⊥
+  rw [Ideal.Quotient.factor_ker hpow, ← Ideal.map_pow, Ideal.map_quotient_self]
 
 /-- The Krull-intersection consequence used in Proposition 1.4.11. -/
 private theorem eq_zero_of_mem_all_maximal_powers_of_isAffinoidAlgebra
     {B : Type w} [CommRing B] [Algebra K B] (hB : IsAffinoidAlgebra K B) (b : B)
-    (hb : ∀ (m : Ideal B), m.IsMaximal → ∀ l : ℕ, 1 ≤ l → b ∈ m ^ l) : b = 0 := sorry
+    (hb : ∀ (m : Ideal B), m.IsMaximal → ∀ l : ℕ, 1 ≤ l → b ∈ m ^ l) : b = 0 := by
+  letI : IsNoetherianRing B := isNoetherianRing_of_isAffinoidAlgebra K hB
+  by_contra hb0
+  let N : Submodule B B := Submodule.span B ({b} : Set B)
+  let J : Ideal B := N.annihilator
+  have hJ : J ≠ ⊤ := by
+    intro htop
+    have hmem : (1 : B) ∈ J := by rw [htop]; exact Submodule.mem_top
+    have : (1 : B) * b = 0 := by
+      simpa [J, N] using (Submodule.mem_annihilator_span_singleton b 1).mp hmem
+    exact hb0 (by simpa using this)
+  obtain ⟨m, hm, hJm⟩ := J.exists_le_maximal hJ
+  have hbInf : b ∈ (⨅ i : ℕ, m ^ i • (⊤ : Submodule B B)) := by
+    rw [Submodule.mem_iInf]
+    intro i
+    rw [smul_eq_mul, ← Ideal.one_eq_top, mul_one]
+    rcases i with _ | i
+    · simp
+    · exact hb m hm (i + 1) (Nat.one_le_iff_ne_zero.mpr (Nat.succ_ne_zero i))
+  obtain ⟨r, hr⟩ := (m.mem_iInf_smul_pow_eq_bot_iff b).mp hbInf
+  have hsub : (1 - (r : B)) ∈ J := by
+    apply (Submodule.mem_annihilator_span_singleton b (1 - (r : B))).mpr
+    rw [sub_smul, one_smul, hr, sub_self]
+  have hone : (1 : B) ∈ m := by
+    simpa using m.add_mem (hJm hsub) r.2
+  exact hm.ne_top (m.eq_top_iff_one.mpr hone)
 
-private theorem continuous_for_affinoidTopology_of_isAffinoidAlgebra
+private theorem continuous_for_residueTopology
     {A : Type v} [CommRing A] [Algebra K A]
     {B : Type w} [CommRing B] [Algebra K B]
-    (hA : IsAffinoidAlgebra K A) (hB : IsAffinoidAlgebra K B) (f : A →ₐ[K] B) :
-    @Continuous A B (affinoidTopology K A hA) (affinoidTopology K B hB) f := by
+    (PA : AffinoidPresentation K A) (PB : AffinoidPresentation K B) (f : A →ₐ[K] B) :
+    @Continuous A B PA.residueTopology PB.residueTopology f := by
   let fLinear : A →ₗ[K] B := f.toLinearMap
-  let PA := hA.presentation
-  let PB := hB.presentation
   letI : NormedAddCommGroup A := compatibleResidueNormedAddCommGroup K A PA
   letI : NormedSpace K A := compatibleResidueNormedSpace K A PA
   letI : CompleteSpace A := compatibleResidueCompleteSpace K A PA
   letI : NormedAddCommGroup B := compatibleResidueNormedAddCommGroup K B PB
   letI : NormedSpace K B := compatibleResidueNormedSpace K B PB
   letI : CompleteSpace B := compatibleResidueCompleteSpace K B PB
-  have hAtop : (inferInstance : TopologicalSpace A) = affinoidTopology K A hA :=
-    (compatibleResidueTopology_eq K A PA).trans
-      (affinoidTopology_eq_residueTopology K A hA PA).symm
-  have hBtop : (inferInstance : TopologicalSpace B) = affinoidTopology K B hB :=
-    (compatibleResidueTopology_eq K B PB).trans
-      (affinoidTopology_eq_residueTopology K B hB PB).symm
+  have hAtop : (inferInstance : TopologicalSpace A) = PA.residueTopology :=
+    compatibleResidueTopology_eq K A PA
+  have hBtop : (inferInstance : TopologicalSpace B) = PB.residueTopology :=
+    compatibleResidueTopology_eq K B PB
   have hfmetric := continuous_linearMap_of_seq_closed_graph K fLinear (by
     intro u x y hu hfu
     suffices y - f x = 0 by simpa [fLinear] using (sub_eq_zero.mp this)
-    apply eq_zero_of_mem_all_maximal_powers_of_isAffinoidAlgebra K hB
+    apply eq_zero_of_mem_all_maximal_powers_of_isAffinoidAlgebra K
+      (show IsAffinoidAlgebra K B from ⟨PB⟩)
     intro m hm l hl
     let q : B →ₐ[K] B ⧸ m ^ l := Ideal.Quotient.mkₐ K (m ^ l)
-    let hQ : IsAffinoidAlgebra K (B ⧸ m ^ l) :=
-      isAffinoidAlgebra_of_surjective K hB q (Ideal.Quotient.mkₐ_surjective K (m ^ l))
+    have hqsurj : Function.Surjective q := Ideal.Quotient.mkₐ_surjective K (m ^ l)
+    let PQ : AffinoidPresentation K (B ⧸ m ^ l) :=
+      pushForwardPresentation K PB q hqsurj
     letI : Module.Finite K (B ⧸ m ^ l) :=
-      finite_quotient_maximal_pow_of_isAffinoidAlgebra K hB m hm l hl
-    have hqf := continuous_for_affinoidTopology_of_finite_codomain K hA hQ (q.comp f)
-    have hq := continuous_for_affinoidTopology_of_finite_codomain K hB hQ q
-    let PQ := hQ.presentation
+      finite_quotient_maximal_pow_of_isAffinoidAlgebra K
+        (show IsAffinoidAlgebra K B from ⟨PB⟩) m hm l hl
+    have hqf := continuous_for_residueTopology_of_finite_codomain K PA PQ (q.comp f)
+    have hq : @Continuous B (B ⧸ m ^ l) PB.residueTopology PQ.residueTopology q :=
+      continuous_for_residueTopology_of_surjective K PB q hqsurj
     rw [← hAtop] at hqf
     rw [← hBtop] at hq
-    letI : TopologicalSpace (B ⧸ m ^ l) := affinoidTopology K (B ⧸ m ^ l) hQ
-    have hT2Q : @T2Space (B ⧸ m ^ l) (affinoidTopology K (B ⧸ m ^ l) hQ) := by
-      rw [affinoidTopology_eq_residueTopology K (B ⧸ m ^ l) hQ PQ]
-      exact residueT2Space K (B ⧸ m ^ l) PQ
-    letI : T2Space (B ⧸ m ^ l) := hT2Q
+    letI : TopologicalSpace (B ⧸ m ^ l) := PQ.residueTopology
+    letI : T2Space (B ⧸ m ^ l) := residueT2Space K (B ⧸ m ^ l) PQ
     have hlim₁ : Tendsto (fun n ↦ q (f (u n))) atTop (𝓝 (q (f x))) :=
       (hqf.tendsto x).comp hu
     have hlim₂ : Tendsto (fun n ↦ q (f (u n))) atTop (𝓝 (q y)) :=
@@ -225,12 +345,8 @@ theorem continuous_for_affinoidPresentationData
         (eB.toAlgHom.comp (Ideal.Quotient.mkₐ K IB)) inferInstance) f := by
   let PA : AffinoidPresentation K A := { n := nA, ideal := IA, equiv := eA }
   let PB : AffinoidPresentation K B := { n := nB, ideal := IB, equiv := eB }
-  have h := continuous_for_affinoidTopology_of_isAffinoidAlgebra K
-    (show IsAffinoidAlgebra K A from ⟨PA⟩) (show IsAffinoidAlgebra K B from ⟨PB⟩) f
-  rw [affinoidTopology_eq_residueTopology K A ⟨PA⟩ PA,
-    affinoidTopology_eq_residueTopology K B ⟨PB⟩ PB] at h
   change @Continuous A B PA.residueTopology PB.residueTopology f
-  exact h
+  exact continuous_for_residueTopology K PA PB f
 
 end
 
