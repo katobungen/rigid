@@ -40,18 +40,35 @@ Do not overwrite or force-push merged remote work.
 
 Production modules such as `Rigid/TateAlgebra/Basic.lean`,
 `Rigid/TateAlgebra/GaussNorm.lean`, and `Rigid/AffinoidAlgebra/QuotientNorm.lean` should contain no
-`sorry`. `Rigid.lean` imports the Development side of the pair; Challenge remains a separately
-checked module.
+`sorry`.
+
+## Root all-import module
+
+`Rigid.lean` must directly import every project module under `Rigid/` so the default CI build cannot
+silently omit a new file. The sole exception is `Rigid/Challenge.lean`: Challenge and Development
+declare the same names and cannot be imported into one environment. `Rigid.lean` imports
+Development, while the comparator check builds Challenge separately.
+
+Whenever a Lean module is added, renamed, or removed:
+
+1. Update the sorted import list in `Rigid.lean`.
+2. Run `./scripts/check_root_imports.sh`.
+3. Run the comparator check so the separately imported Challenge module is also built.
+
+Do not leave a project module reachable only through another module's transitive imports. CI runs
+the root-import and comparator checks to ensure every module is covered.
 
 ## Required checks
 
 After changing comparator declarations or production code, run:
 
 ```bash
+./scripts/check_root_imports.sh
 ./scripts/check_challenge_development.sh
 lake build Rigid
 ```
 
+The root-import check verifies that `Rigid.lean` directly imports every compatible project module.
 The comparator check verifies that Challenge and Development expose identical public declaration
 names, kinds, and elaborated types. Also verify that Challenge has only mathlib imports and inspect
 the source diff. Any declaration-level difference is a bug; only import lines and implementation
