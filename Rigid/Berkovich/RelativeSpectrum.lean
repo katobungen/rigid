@@ -1,3 +1,5 @@
+import Mathlib.Analysis.Normed.Operator.Basic
+import Mathlib.Analysis.Normed.Unbundled.IsPowMulFaithful
 import Rigid.Berkovich.Spectrum
 
 set_option linter.style.header false
@@ -94,6 +96,55 @@ def comap {B : Type w} [NormedCommRing B] [Algebra K B] (f : A →ₐ[K] B)
 theorem comap_apply {B : Type w} [NormedCommRing B] [Algebra K B] (f : A →ₐ[K] B)
     (hf : ∀ a, ‖f a‖ ≤ ‖a‖) (x : BerkovichSpectrumOver K B) (a : A) :
     comap K A f hf x a = x (f a) :=
+  rfl
+
+/-- Evaluation after a continuous algebra homomorphism is contractive, even when the homomorphism
+itself is only bounded by a constant. Multiplicativity removes the constant after taking powers. -/
+theorem eval_continuousAlgHom_le_norm
+    (K' : Type u) [NontriviallyNormedField K']
+    (A' : Type v) [NormedCommRing A'] [NormedAlgebra K' A']
+    {B : Type w} [NormedCommRing B] [NormedAlgebra K' B]
+    (f : ContinuousAlgHom K' A' B) (x : BerkovichSpectrumOver K' B) (a : A') :
+    x (f a) ≤ ‖a‖ := by
+  apply contraction_of_isPowMul_of_boundedWrt (SeminormedRing.toRingSeminorm A')
+    (nβ := fun b : B ↦ x b)
+  · intro b n hn
+    exact map_pow x.toBerkovichSpectrum.seminorm b n
+  · obtain ⟨M, hM, hf⟩ := SemilinearMapClass.bound_of_continuous f f.continuous
+    exact ⟨M, hM, fun a ↦ (le_norm K' B x (f a)).trans (hf a)⟩
+
+/-- Pull back a relative Berkovich point along an arbitrary continuous algebra homomorphism. -/
+noncomputable def comapContinuous
+    (K' : Type u) [NontriviallyNormedField K']
+    (A' : Type v) [NormedCommRing A'] [NormedAlgebra K' A']
+    {B : Type w} [NormedCommRing B] [NormedAlgebra K' B]
+    (f : ContinuousAlgHom K' A' B) (x : BerkovichSpectrumOver K' B) :
+    BerkovichSpectrumOver K' A' where
+  toBerkovichSpectrum :=
+    { seminorm :=
+        { toFun := fun a ↦ x (f a)
+          map_zero' := by simp
+          add_le' := by
+            intro a b
+            simpa only [map_add] using map_add_le K' B x (f a) (f b)
+          neg' := by simp
+          map_one' := by simp
+          map_mul' := by simp }
+      le_norm' := eval_continuousAlgHom_le_norm K' A' f x }
+  map_algebraMap' r := by
+    change x (f (algebraMap K' A' r)) = ‖r‖
+    calc
+      x (f (algebraMap K' A' r)) = x (algebraMap K' B r) :=
+        congrArg (fun b : B ↦ x b) (f.commutes r)
+      _ = ‖r‖ := x.map_algebraMap' r
+
+@[simp]
+theorem comapContinuous_apply
+    (K' : Type u) [NontriviallyNormedField K']
+    (A' : Type v) [NormedCommRing A'] [NormedAlgebra K' A']
+    {B : Type w} [NormedCommRing B] [NormedAlgebra K' B]
+    (f : ContinuousAlgHom K' A' B) (x : BerkovichSpectrumOver K' B) (a : A') :
+    comapContinuous K' A' f x a = x (f a) :=
   rfl
 
 end BerkovichSpectrumOver

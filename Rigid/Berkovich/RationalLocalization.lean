@@ -53,51 +53,6 @@ structure RationalLocalizationPresentation
     (φ ψ : ContinuousAlgHom K L B), φ.comp baseMap = ψ.comp baseMap →
       (∀ i, φ (coordinate i) = ψ (coordinate i)) → φ = ψ
 
-private theorem eval_continuousAlgHom_le_norm
-    {B : Type v} [NormedCommRing B] [NormedAlgebra K B]
-    {C : Type w} [NormedCommRing C] [NormedAlgebra K C]
-    (φ : ContinuousAlgHom K B C) (x : Rigid.BerkovichSpectrumOver K C) (b : B) :
-    x (φ b) ≤ ‖b‖ := by
-  apply contraction_of_isPowMul_of_boundedWrt (SeminormedRing.toRingSeminorm B)
-    (nβ := fun c : C ↦ x c)
-  · intro c n hn
-    exact map_pow x.toBerkovichSpectrum.seminorm c n
-  · obtain ⟨M, hM, hφ⟩ := SemilinearMapClass.bound_of_continuous φ φ.continuous
-    exact ⟨M, hM, fun c ↦ (BerkovichSpectrum.le_norm C x.toBerkovichSpectrum (φ c)).trans
-      (hφ c)⟩
-
-private noncomputable def pullback
-    {B : Type v} [NormedCommRing B] [NormedAlgebra K B]
-    {C : Type w} [NormedCommRing C] [NormedAlgebra K C]
-    (φ : ContinuousAlgHom K B C) (x : Rigid.BerkovichSpectrumOver K C) :
-    Rigid.BerkovichSpectrumOver K B where
-  toBerkovichSpectrum :=
-    { seminorm :=
-        { toFun := fun b ↦ x (φ b)
-          map_zero' := by simp
-          add_le' := by
-            intro a b
-            simpa only [map_add] using
-              BerkovichSpectrum.map_add_le C x.toBerkovichSpectrum (φ a) (φ b)
-          neg' := by simp
-          map_one' := by simp
-          map_mul' := by simp }
-      le_norm' := eval_continuousAlgHom_le_norm K φ x }
-  map_algebraMap' := by
-    intro r
-    change x (φ (algebraMap K B r)) = ‖r‖
-    calc
-      x (φ (algebraMap K B r)) = x (algebraMap K C r) :=
-        congrArg (fun c : C ↦ x c) (φ.commutes r)
-      _ = ‖r‖ := x.map_algebraMap' r
-
-@[simp]
-private theorem pullback_apply
-    {B : Type v} [NormedCommRing B] [NormedAlgebra K B]
-    {C : Type w} [NormedCommRing C] [NormedAlgebra K C]
-    (φ : ContinuousAlgHom K B C) (x : Rigid.BerkovichSpectrumOver K C) (b : B) :
-    pullback K φ x b = x (φ b) := rfl
-
 private theorem apply_le_one_of_isPowerBounded
     {B : Type v} [NormedCommRing B] [NormedAlgebra K B]
     (x : Rigid.BerkovichSpectrumOver K B) {b : B} (hb : IsPowerBounded b) : x b ≤ 1 := by
@@ -168,7 +123,7 @@ variable {L : Type v} [NormedCommRing L] [NormedAlgebra K L] [CompleteSpace L]
 private noncomputable def localizationSpectrumMap
     (P : RationalLocalizationPresentation K A L n g f) :
     Rigid.BerkovichSpectrumOver K L → RationalDomain K A g f := fun x ↦
-  ⟨pullback K P.baseMap x, by
+  ⟨comapContinuous K A P.baseMap x, by
     intro i
     change x (P.baseMap (f i)) ≤ x (P.baseMap g)
     rw [← P.baseMap_denominator_mul_coordinate i, BerkovichSpectrum.map_mul]
