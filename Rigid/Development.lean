@@ -1,6 +1,7 @@
 import Mathlib
 import Rigid.AffinoidAlgebra.AutomaticContinuity
 import Rigid.AffinoidAlgebra.Basic
+import Rigid.AffinoidAlgebra.MaximalSpectrum
 import Rigid.Berkovich.Nonempty
 import Rigid.Berkovich.RelativeSpectrum
 import Rigid.Berkovich.RelativeNonempty
@@ -46,7 +47,7 @@ affinoid examples, isomorphism invariance, and nonvacuity conditions to constrai
 
 open CategoryTheory
 open Filter
-open scoped Topology
+open scoped NNReal Topology
 
 universe u v w z
 
@@ -81,7 +82,6 @@ theorem coe_tateVariable (i : ι) :
 noncomputable def gaussNorm : TateAlgebra K ι → ℝ :=
   Rigid.gaussNorm K ι
 
-
 /-- The defining coefficient formula for the Gauss norm, without a finiteness assumption on the
 variable type. -/
 theorem gaussNorm_eq_sSup_coeff (f : TateAlgebra K ι) :
@@ -102,7 +102,6 @@ noncomputable instance tateAlgebraNormedAlgebra : NormedAlgebra K (TateAlgebra K
 
 noncomputable instance tateAlgebraIsUltrametricDist : IsUltrametricDist (TateAlgebra K ι) :=
   Rigid.tateAlgebraIsUltrametricDist K ι
-
 
 /-- The constant coefficient of a scalar in the Tate algebra is that scalar. -/
 @[simp]
@@ -365,7 +364,6 @@ noncomputable def residueNormedAlgebra (P : AffinoidPresentation K A) :
     letI := P.residueNormedCommRing
     NormedAlgebra K A := sorry
 
-
 /-- The scalar embedding of the residue normed algebra agrees with the presentation map applied to
 constant Tate series. -/
 @[simp]
@@ -438,7 +436,8 @@ theorem continuous_for_affinoidTopology_of_isAffinoidAlgebra
     {B : Type w} [CommRing B] [Algebra K B]
     (hA : IsAffinoidAlgebra K A) (hB : IsAffinoidAlgebra K B) (f : A →ₐ[K] B) :
     @Continuous A B (affinoidTopology K A hA) (affinoidTopology K B hB) f :=
-  Rigid.continuous_for_affinoidPresentationData K hA.presentation.ideal hA.presentation.equiv hB.presentation.ideal hB.presentation.equiv f
+  Rigid.continuous_for_affinoidPresentationData K hA.presentation.ideal hA.presentation.equiv
+    hB.presentation.ideal hB.presentation.equiv f
 
 /-- Unpack an affinoid algebra as a surjective algebraic presentation by a finite Tate algebra. -/
 theorem exists_surjective_presentation_of_isAffinoidAlgebra (hA : IsAffinoidAlgebra K A) :
@@ -652,9 +651,9 @@ theorem isAffinoidAlgebra_rationalLocalization (hA : IsAffinoidAlgebra K A)
 
 section BerkovichSpectrum
 
-variable (R : Type v) [NormedRing R]
+variable (R : Type v) [SeminormedRing R]
 
-/-- A point of the Berkovich spectrum of a normed ring: a multiplicative seminorm bounded by the
+/-- A point of the Berkovich spectrum of a seminormed ring: a multiplicative seminorm bounded by the
 ring norm. The bound is normalized to be contractive. -/
 structure BerkovichSpectrum where
   seminorm : MulRingSeminorm R
@@ -731,7 +730,7 @@ theorem kernel_isPrime (x : BerkovichSpectrum R) : x.kernel.IsPrime := by
     · exact Or.inr ((mem_kernel_iff R x b).mpr hb)
 
 /-- Pull back a Berkovich point along a norm-nonincreasing ring homomorphism. -/
-def comap {S : Type w} [NormedRing S] (f : R →+* S) (hf : ∀ a, ‖f a‖ ≤ ‖a‖)
+def comap {S : Type w} [SeminormedRing S] (f : R →+* S) (hf : ∀ a, ‖f a‖ ≤ ‖a‖)
     (x : BerkovichSpectrum S) : BerkovichSpectrum R where
   seminorm :=
     { toFun := fun a ↦ x (f a)
@@ -743,7 +742,8 @@ def comap {S : Type w} [NormedRing S] (f : R →+* S) (hf : ∀ a, ‖f a‖ ≤
   le_norm' a := (le_norm S x (f a)).trans (hf a)
 
 @[simp]
-theorem comap_apply {S : Type w} [NormedRing S] (f : R →+* S) (hf : ∀ a, ‖f a‖ ≤ ‖a‖)
+theorem comap_apply {S : Type w} [SeminormedRing S] (f : R →+* S)
+    (hf : ∀ a, ‖f a‖ ≤ ‖a‖)
     (x : BerkovichSpectrum S) (a : R) : comap R f hf x a = x (f a) :=
   rfl
 
@@ -776,7 +776,8 @@ theorem continuous_iff_eval {X : Type w} [TopologicalSpace X] {f : X → Berkovi
   exact continuous_pi_iff
 
 /-- Pullback of Berkovich points along a norm-nonincreasing ring homomorphism is continuous. -/
-theorem continuous_comap {S : Type w} [NormedRing S] (f : R →+* S) (hf : ∀ a, ‖f a‖ ≤ ‖a‖) :
+theorem continuous_comap {S : Type w} [SeminormedRing S] (f : R →+* S)
+    (hf : ∀ a, ‖f a‖ ≤ ‖a‖) :
     Continuous (comap R f hf) :=
   (continuous_iff_eval R).2 fun a ↦ continuous_eval S (f a)
 
@@ -801,7 +802,7 @@ private noncomputable def homeomorphRigid :
   continuous_invFun := (Rigid.BerkovichSpectrum.continuous_iff_eval R).2 fun a ↦
     continuous_eval R a
 
-/-- The Berkovich spectrum of every normed ring is compact. -/
+/-- The Berkovich spectrum of every seminormed ring is compact. -/
 theorem isCompact_univ : IsCompact (Set.univ : Set (BerkovichSpectrum R)) := by
   have h := ((homeomorphRigid R).isCompact_image (s := Set.univ)).2
     (Rigid.BerkovichSpectrum.isCompact_univ R)
@@ -816,9 +817,9 @@ end BerkovichSpectrum
 
 namespace BerkovichSpectrum
 
-/-- A bounded multiplicative seminorm on a nonarchimedean commutative normed ring is
+/-- A bounded multiplicative seminorm on a nonarchimedean commutative seminormed ring is
 nonarchimedean. -/
-theorem map_add_le_max {R : Type v} [NormedCommRing R] [IsUltrametricDist R]
+theorem map_add_le_max {R : Type v} [SeminormedCommRing R] [IsUltrametricDist R]
     (x : BerkovichSpectrum R) (a b : R) : x (a + b) ≤ max (x a) (x b) := by
   simpa [homeomorphRigid] using
     Rigid.BerkovichSpectrum.map_add_le_max ((homeomorphRigid R).symm x) a b
@@ -918,6 +919,7 @@ theorem continuous_comap {B : Type w} [NormedCommRing B] [NormedAlgebra K B]
     Continuous (comap K A f hf) :=
   (continuous_iff_eval K A).2 fun a ↦ continuous_eval K B (f a)
 
+set_option linter.overlappingInstances false in
 noncomputable instance berkovichSpectrumOverT2Space [CompleteSpace A] [IsUltrametricDist A] :
     T2Space (BerkovichSpectrumOver K A) :=
   (isEmbedding_toBerkovichSpectrum K A).t2Space
@@ -947,6 +949,7 @@ theorem isCompact_univ : IsCompact (Set.univ : Set (BerkovichSpectrumOver K A)) 
   rw [(isEmbedding_toBerkovichSpectrum K A).isCompact_iff, Set.image_univ]
   exact (isClosed_range_toBerkovichSpectrum K A).isCompact
 
+set_option linter.overlappingInstances false in
 noncomputable instance berkovichSpectrumOverCompactSpace [CompleteSpace A]
     [IsUltrametricDist A] : CompactSpace (BerkovichSpectrumOver K A) :=
   isCompact_univ_iff.mp (isCompact_univ K A)
@@ -966,85 +969,198 @@ abbrev ResidueDomain (x : BerkovichSpectrumOver K A) := A ⧸ x.kernel
 abbrev ResidueFractionField (x : BerkovichSpectrumOver K A) :=
   FractionRing (ResidueDomain K A x)
 
-noncomputable instance residueFractionNormedField (x : BerkovichSpectrumOver K A) :
-    NormedField (ResidueFractionField K A x) := sorry
+set_option linter.overlappingInstances false
 
-noncomputable instance residueFractionIsUltrametricDist (x : BerkovichSpectrumOver K A) :
-    IsUltrametricDist (ResidueFractionField K A x) := sorry
+section CompletedResidueConstruction
+
+private noncomputable def completedResidueValuation (x : BerkovichSpectrumOver K A) :
+    Valuation A ℝ≥0 where
+  toFun a := ⟨x a, BerkovichSpectrum.nonneg A x.toBerkovichSpectrum a⟩
+  map_zero' := by ext; exact x.toBerkovichSpectrum.map_zero
+  map_one' := by ext; exact x.toBerkovichSpectrum.map_one
+  map_mul' a b := by ext; exact BerkovichSpectrum.map_mul A x.toBerkovichSpectrum a b
+  map_add_le_max' a b := BerkovichSpectrumOver.map_add_le_max K A x a b
+
+private theorem completedResidueValuation_supp_eq_kernel (x : BerkovichSpectrumOver K A) :
+    (completedResidueValuation K A x).supp = x.kernel := by
+  ext a
+  rw [Valuation.mem_supp_iff, BerkovichSpectrumOver.mem_kernel_iff]
+  change (⟨x a, BerkovichSpectrum.nonneg A x.toBerkovichSpectrum a⟩ : ℝ≥0) = 0 ↔ x a = 0
+  simp
+
+private noncomputable def completedResidueQuotientValuation
+    (x : BerkovichSpectrumOver K A) : Valuation (ResidueDomain K A x) ℝ≥0 :=
+  (completedResidueValuation K A x).onQuot
+    (by rw [completedResidueValuation_supp_eq_kernel])
+
+@[simp]
+private theorem completedResidueQuotientValuation_supp (x : BerkovichSpectrumOver K A) :
+    (completedResidueQuotientValuation K A x).supp = 0 := by
+  rw [completedResidueQuotientValuation, Valuation.supp_quot,
+    completedResidueValuation_supp_eq_kernel]
+  exact Ideal.map_quotient_self x.kernel
+
+private noncomputable def completedResidueFractionValuation
+    (x : BerkovichSpectrumOver K A) : Valuation (ResidueFractionField K A x) ℝ≥0 :=
+  (completedResidueQuotientValuation K A x).extendToLocalization
+    (B := ResidueFractionField K A x) (by
+      intro s hs
+      rw [Ideal.mem_primeCompl_iff, completedResidueQuotientValuation_supp]
+      exact nonZeroDivisors.ne_zero hs)
+
+private noncomputable def completedResidueFractionAbsoluteValue
+    (x : BerkovichSpectrumOver K A) : AbsoluteValue (ResidueFractionField K A x) ℝ where
+  toFun z := completedResidueFractionValuation K A x z
+  map_mul' a b := by simp
+  nonneg' _ := NNReal.zero_le_coe
+  eq_zero' a := by
+    rw [NNReal.coe_eq_zero, (completedResidueFractionValuation K A x).zero_iff]
+  add_le' a b := by
+    exact (NNReal.coe_le_coe.mpr
+      ((completedResidueFractionValuation K A x).map_add a b)).trans
+        (max_le (le_add_of_nonneg_right NNReal.zero_le_coe)
+          (le_add_of_nonneg_left NNReal.zero_le_coe))
+
+noncomputable instance residueFractionNormedField [CompleteSpace A] [IsUltrametricDist A]
+    (x : BerkovichSpectrumOver K A) :
+    NormedField (ResidueFractionField K A x) :=
+  (completedResidueFractionAbsoluteValue K A x).toNormedField
+
+noncomputable instance residueFractionIsUltrametricDist
+    [CompleteSpace A] [IsUltrametricDist A] (x : BerkovichSpectrumOver K A) :
+    IsUltrametricDist (ResidueFractionField K A x) :=
+  IsUltrametricDist.isUltrametricDist_of_isNonarchimedean_norm fun a b ↦ by
+    change (completedResidueFractionValuation K A x (a + b) : ℝ) ≤
+      max (completedResidueFractionValuation K A x a : ℝ)
+        (completedResidueFractionValuation K A x b : ℝ)
+    exact_mod_cast (completedResidueFractionValuation K A x).map_add a b
 
 /-- The completed residue field of a relative Berkovich point. -/
 abbrev CompletedResidueField (x : BerkovichSpectrumOver K A) :=
   UniformSpace.Completion (ResidueFractionField K A x)
 
-noncomputable instance completedResidueIsUltrametricDist (x : BerkovichSpectrumOver K A) :
-    IsUltrametricDist (CompletedResidueField K A x) := sorry
+private theorem completedResidue_norm_add_le_max (x : BerkovichSpectrumOver K A)
+    (a b : CompletedResidueField K A x) : ‖a + b‖ ≤ max ‖a‖ ‖b‖ := by
+  induction a, b using UniformSpace.Completion.induction_on₂ with
+  | hp => exact isClosed_le (by fun_prop) (by fun_prop)
+  | ih a b =>
+      simpa only [← UniformSpace.Completion.coe_add, UniformSpace.Completion.norm_coe] using
+        IsUltrametricDist.norm_add_le_max a b
+
+noncomputable instance completedResidueIsUltrametricDist
+    [CompleteSpace A] [IsUltrametricDist A] (x : BerkovichSpectrumOver K A) :
+    IsUltrametricDist (CompletedResidueField K A x) :=
+  IsUltrametricDist.isUltrametricDist_of_isNonarchimedean_norm
+    (completedResidue_norm_add_le_max K A x)
 
 /-- The canonical map from the original algebra to the residue fraction field. -/
-noncomputable def residueFractionMap (x : BerkovichSpectrumOver K A) :
-    A →+* ResidueFractionField K A x := sorry
+noncomputable def residueFractionMap [CompleteSpace A] [IsUltrametricDist A]
+    (x : BerkovichSpectrumOver K A) :
+    A →+* ResidueFractionField K A x :=
+  (algebraMap (ResidueDomain K A x) (ResidueFractionField K A x)).comp
+    (Ideal.Quotient.mk x.kernel)
 
 /-- The residue-fraction map is the quotient map followed by the canonical embedding into the
 fraction field. -/
 @[simp]
-theorem residueFractionMap_apply (x : BerkovichSpectrumOver K A) (a : A) :
+theorem residueFractionMap_apply [CompleteSpace A] [IsUltrametricDist A]
+    (x : BerkovichSpectrumOver K A) (a : A) :
     residueFractionMap K A x a =
       algebraMap (ResidueDomain K A x) (ResidueFractionField K A x)
-        (Ideal.Quotient.mk x.kernel a) := sorry
+        (Ideal.Quotient.mk x.kernel a) := rfl
 
 /-- The residue-fraction map realizes the point seminorm before completion. -/
 @[simp]
-theorem norm_residueFractionMap (x : BerkovichSpectrumOver K A) (a : A) :
-    ‖residueFractionMap K A x a‖ = x a := sorry
+theorem norm_residueFractionMap [CompleteSpace A] [IsUltrametricDist A]
+    (x : BerkovichSpectrumOver K A) (a : A) :
+    ‖residueFractionMap K A x a‖ = x a := by
+  change (completedResidueFractionValuation K A x
+    (algebraMap (ResidueDomain K A x) (ResidueFractionField K A x)
+      (Ideal.Quotient.mk x.kernel a)) : ℝ≥0) = x a
+  rw [completedResidueFractionValuation, Valuation.extendToLocalization_apply_map_apply]
+  rfl
 
 /-- The canonical evaluation map from the algebra to the completed residue field. -/
-noncomputable def completedResidueMap (x : BerkovichSpectrumOver K A) :
-    A →+* CompletedResidueField K A x := sorry
+noncomputable def completedResidueMap [CompleteSpace A] [IsUltrametricDist A]
+    (x : BerkovichSpectrumOver K A) :
+    A →+* CompletedResidueField K A x :=
+  UniformSpace.Completion.coeRingHom.comp (residueFractionMap K A x)
 
 /-- Completed residue evaluation is the residue-fraction map followed by the canonical map into the
 uniform completion. -/
 @[simp]
-theorem completedResidueMap_apply (x : BerkovichSpectrumOver K A) (a : A) :
+theorem completedResidueMap_apply [CompleteSpace A] [IsUltrametricDist A]
+    (x : BerkovichSpectrumOver K A) (a : A) :
     completedResidueMap K A x a =
-      (residueFractionMap K A x a : CompletedResidueField K A x) := sorry
+      (residueFractionMap K A x a : CompletedResidueField K A x) := rfl
 
 @[simp]
-theorem norm_completedResidueMap (x : BerkovichSpectrumOver K A) (a : A) :
-    ‖completedResidueMap K A x a‖ = x a := sorry
+theorem norm_completedResidueMap [CompleteSpace A] [IsUltrametricDist A]
+    (x : BerkovichSpectrumOver K A) (a : A) :
+    ‖completedResidueMap K A x a‖ = x a := by
+  change ‖(residueFractionMap K A x a : CompletedResidueField K A x)‖ = x a
+  rw [UniformSpace.Completion.norm_coe, norm_residueFractionMap]
 
-noncomputable instance completedResidueAlgebra (x : BerkovichSpectrumOver K A) :
-    Algebra K (CompletedResidueField K A x) := sorry
+noncomputable instance completedResidueAlgebra [CompleteSpace A] [IsUltrametricDist A]
+    (x : BerkovichSpectrumOver K A) :
+    Algebra K (CompletedResidueField K A x) :=
+  ((completedResidueMap K A x).comp (algebraMap K A)).toAlgebra
 
-noncomputable instance completedResidueNormedAlgebra (x : BerkovichSpectrumOver K A) :
-    NormedAlgebra K (CompletedResidueField K A x) := sorry
+noncomputable instance completedResidueNormedAlgebra
+    [CompleteSpace A] [IsUltrametricDist A] (x : BerkovichSpectrumOver K A) :
+    NormedAlgebra K (CompletedResidueField K A x) where
+  norm_smul_le r y := by
+    rw [Algebra.smul_def]
+    change ‖completedResidueMap K A x (algebraMap K A r) * y‖ ≤ ‖r‖ * ‖y‖
+    rw [_root_.norm_mul, norm_completedResidueMap, x.map_algebraMap]
 
 noncomputable instance completedResidueNontriviallyNormedField
-    (x : BerkovichSpectrumOver K A) :
-    NontriviallyNormedField (CompletedResidueField K A x) := sorry
+    [CompleteSpace A] [IsUltrametricDist A] (x : BerkovichSpectrumOver K A) :
+    NontriviallyNormedField (CompletedResidueField K A x) :=
+  ⟨let ⟨r, hr⟩ := NontriviallyNormedField.non_trivial (α := K)
+   ⟨algebraMap K (CompletedResidueField K A x) r, by
+    change 1 < ‖completedResidueMap K A x (algebraMap K A r)‖
+    rwa [norm_completedResidueMap, x.map_algebraMap]⟩⟩
 
 /-- The completed residue evaluation as a `K`-algebra homomorphism. -/
-noncomputable def completedResidueAlgHom (x : BerkovichSpectrumOver K A) :
-    A →ₐ[K] CompletedResidueField K A x := sorry
+noncomputable def completedResidueAlgHom [CompleteSpace A] [IsUltrametricDist A]
+    (x : BerkovichSpectrumOver K A) :
+    A →ₐ[K] CompletedResidueField K A x where
+  __ := completedResidueMap K A x
+  commutes' _ := rfl
 
 /-- The bundled algebra homomorphism has the canonical completed residue map as its underlying ring
 homomorphism. -/
 @[simp]
-theorem completedResidueAlgHom_apply (x : BerkovichSpectrumOver K A) (a : A) :
-    completedResidueAlgHom K A x a = completedResidueMap K A x a := sorry
+theorem completedResidueAlgHom_apply [CompleteSpace A] [IsUltrametricDist A]
+    (x : BerkovichSpectrumOver K A) (a : A) :
+    completedResidueAlgHom K A x a = completedResidueMap K A x a := rfl
 
 /-- The scalar embedding in the completed residue field is induced by evaluation on the original
 algebra. -/
 @[simp]
-theorem algebraMap_completedResidueField (x : BerkovichSpectrumOver K A) (r : K) :
+theorem algebraMap_completedResidueField [CompleteSpace A] [IsUltrametricDist A]
+    (x : BerkovichSpectrumOver K A) (r : K) :
     algebraMap K (CompletedResidueField K A x) r =
-      completedResidueMap K A x (algebraMap K A r) := sorry
+      completedResidueMap K A x (algebraMap K A r) := rfl
 
 @[simp]
-theorem norm_completedResidueAlgHom (x : BerkovichSpectrumOver K A) (a : A) :
-    ‖completedResidueAlgHom K A x a‖ = x a := sorry
+theorem norm_completedResidueAlgHom [CompleteSpace A] [IsUltrametricDist A]
+    (x : BerkovichSpectrumOver K A) (a : A) :
+    ‖completedResidueAlgHom K A x a‖ = x a :=
+  norm_completedResidueMap K A x a
 
 @[simp]
-theorem ker_completedResidueMap (x : BerkovichSpectrumOver K A) :
-    RingHom.ker (completedResidueMap K A x) = x.kernel := sorry
+theorem ker_completedResidueMap [CompleteSpace A] [IsUltrametricDist A]
+    (x : BerkovichSpectrumOver K A) :
+    RingHom.ker (completedResidueMap K A x) = x.kernel := by
+  ext a
+  rw [RingHom.mem_ker, ← norm_eq_zero, norm_completedResidueMap,
+    BerkovichSpectrumOver.mem_kernel_iff]
+
+end CompletedResidueConstruction
+
+set_option linter.overlappingInstances true
 
 /-- The rational locus cut out by `|fᵢ(x)| ≤ |g(x)|`. -/
 def rationalDomainSet {n : ℕ} (g : A) (f : Fin n → A) : Set (BerkovichSpectrumOver K A) :=
@@ -1070,8 +1186,10 @@ theorem isClosed_rationalDomainSet {n : ℕ} (g : A) (f : Fin n → A) :
     (BerkovichSpectrumOver.continuous_eval K A _)
     (BerkovichSpectrumOver.continuous_eval K A _)
 
-noncomputable instance rationalDomainCompactSpace {n : ℕ} (g : A) (f : Fin n → A) :
-    CompactSpace (RationalDomain K A g f) := sorry
+set_option linter.overlappingInstances false in
+noncomputable instance rationalDomainCompactSpace [CompleteSpace A] [IsUltrametricDist A]
+    {n : ℕ} (g : A) (f : Fin n → A) : CompactSpace (RationalDomain K A g f) :=
+  isCompact_iff_compactSpace.mp (isClosed_rationalDomainSet K A g f).isCompact
 
 /-- Rational domains are compact. -/
 theorem isCompact_univ {n : ℕ} (g : A) (f : Fin n → A) :
@@ -1119,7 +1237,6 @@ theorem localizationSpectrumHomeomorph_apply_baseMap
 end RationalDomain
 
 end BerkovichSpectrumOver
-
 
 /-! ### The rational basis and its structure sheaf -/
 
@@ -1252,7 +1369,6 @@ theorem isCompact_univ_berkovichSpectrumOver (hA : IsAffinoidAlgebra K A) :
 
 end AffinoidAlgebra
 
-
 /-- A universe-bounded strict affinoid algebra, used as explicit local-model data for global
 analytic spaces. -/
 structure AffinoidAlgebraModel
@@ -1351,11 +1467,15 @@ theorem carrier_inter {X : RigidSpace K} (U V : AdmissibleOpen K X) :
 
 /-- The intersection is contained in its left factor. -/
 theorem inter_subset_left {X : RigidSpace K} (U V : AdmissibleOpen K X) :
-    (inter K U V).carrier ⊆ U.carrier := sorry
+    (inter K U V).carrier ⊆ U.carrier := by
+  rw [carrier_inter]
+  exact Set.inter_subset_left
 
 /-- The intersection is contained in its right factor. -/
 theorem inter_subset_right {X : RigidSpace K} (U V : AdmissibleOpen K X) :
-    (inter K U V).carrier ⊆ V.carrier := sorry
+    (inter K U V).carrier ⊆ V.carrier := by
+  rw [carrier_inter]
+  exact Set.inter_subset_right
 
 /-- A family is an admissible cover of an admissible open in the rigid Grothendieck topology. -/
 def IsCover {X : RigidSpace K} {ι : Type (u + 1)}
@@ -1392,16 +1512,17 @@ theorem iUnion_carrier {X : RigidSpace K} {ι : Type (u + 1)}
 end IsCover
 
 /-- An admissible open is quasi-compact for the admissible topology. -/
-def IsQuasiCompact {X : RigidSpace K} (U : AdmissibleOpen K X) : Prop := sorry
+def IsQuasiCompact {X : RigidSpace K} (U : AdmissibleOpen K X) : Prop :=
+  ∀ {ι : Type (u + 1)} (V : ι → AdmissibleOpen K X), IsCover K V U →
+    ∃ s : Set ι, s.Finite ∧ IsCover K (fun i : s ↦ V i.1) U
 
 /-- Quasi-compactness means that every admissible cover has a finite admissible subcover. -/
 theorem isQuasiCompact_iff {X : RigidSpace K} (U : AdmissibleOpen K X) :
     IsQuasiCompact K U ↔
       ∀ {ι : Type (u + 1)} (V : ι → AdmissibleOpen K X), IsCover K V U →
-        ∃ s : Set ι, s.Finite ∧ IsCover K (fun i : s ↦ V i.1) U := sorry
+        ∃ s : Set ι, s.Finite ∧ IsCover K (fun i : s ↦ V i.1) U := Iff.rfl
 
 end AdmissibleOpen
-
 
 namespace StructureSheaf
 
@@ -1488,30 +1609,61 @@ structure AnalyticMorphismData (X Y : RigidSpace K) where
 namespace AnalyticMorphismData
 
 /-- Identity analytic-morphism data. -/
-noncomputable def id (X : RigidSpace K) : AnalyticMorphismData K X X := sorry
+noncomputable def id (X : RigidSpace K) : AnalyticMorphismData K X X where
+  base x := x
+  preimage U := U
+  mem_preimage _ _ := Iff.rfl
+  preimage_mono h := h
+  pullback U := AlgHom.id K (StructureSheaf.Sections K U)
+  pullback_restriction := by
+    intros
+    rw [AlgHom.comp_id, AlgHom.id_comp]
+  stalkMap x := AlgHom.id K (StructureSheaf.Stalk K X x)
+  stalkMap_isLocal _ := ⟨fun _ h => by simpa only [AlgHom.id_apply] using h⟩
+  pullback_germ := by
+    intros
+    rfl
 
 /-- Composition of analytic-morphism data. -/
 noncomputable def comp {X Y Z : RigidSpace K}
     (f : AnalyticMorphismData K X Y) (g : AnalyticMorphismData K Y Z) :
-    AnalyticMorphismData K X Z := sorry
+    AnalyticMorphismData K X Z where
+  base x := g.base (f.base x)
+  preimage U := f.preimage (g.preimage U)
+  mem_preimage x U := (f.mem_preimage x (g.preimage U)).trans (g.mem_preimage (f.base x) U)
+  preimage_mono h := f.preimage_mono (g.preimage_mono h)
+  pullback U := (f.pullback (g.preimage U)).comp (g.pullback U)
+  pullback_restriction := by
+    intro U V hUV
+    rw [← AlgHom.comp_assoc, f.pullback_restriction (g.preimage_mono hUV),
+      AlgHom.comp_assoc, g.pullback_restriction hUV, ← AlgHom.comp_assoc]
+  stalkMap x := (f.stalkMap x).comp (g.stalkMap (f.base x))
+  stalkMap_isLocal x := by
+    refine ⟨fun a ha => ?_⟩
+    exact (g.stalkMap_isLocal (f.base x)).map_nonunit a
+      ((f.stalkMap_isLocal x).map_nonunit _ ha)
+  pullback_germ := by
+    intro x U hx s
+    simp only [AlgHom.comp_apply]
+    rw [g.pullback_germ, f.pullback_germ]
 
 @[simp]
-theorem id_base (X : RigidSpace K) : (id K X).base = _root_.id := sorry
+theorem id_base (X : RigidSpace K) : (id K X).base = _root_.id := rfl
 
 @[simp]
 theorem id_preimage (X : RigidSpace K) (U : AdmissibleOpen K X) :
-    (id K X).preimage U = U := sorry
+    (id K X).preimage U = U := rfl
 
 @[simp]
 theorem comp_base {X Y Z : RigidSpace K}
     (f : AnalyticMorphismData K X Y) (g : AnalyticMorphismData K Y Z) :
-    (comp K f g).base = g.base ∘ f.base := sorry
+    (comp K f g).base = g.base ∘ f.base := rfl
 
 @[simp]
 theorem comp_preimage {X Y Z : RigidSpace K}
     (f : AnalyticMorphismData K X Y) (g : AnalyticMorphismData K Y Z)
     (U : AdmissibleOpen K Z) :
-    (comp K f g).preimage U = f.preimage (g.preimage U) := sorry
+    (comp K f g).preimage U = f.preimage (g.preimage U) := rfl
 
 end AnalyticMorphismData
 
@@ -1558,14 +1710,14 @@ end AffinoidDomain
 
 /-- A family of affinoid domains is an admissible cover. -/
 def IsAdmissibleAffinoidCover {X : RigidSpace K} {ι : Type (u + 1)}
-    (U : ι → AffinoidDomain K X) : Prop := sorry
-
+    (U : ι → AffinoidDomain K X) : Prop :=
+  AdmissibleOpen.IsCover K (fun i ↦ (U i).toAdmissibleOpen) (AdmissibleOpen.top K X)
 
 /-- Affinoid admissible covers are precisely admissible-open covers of the full space. -/
 theorem isAdmissibleAffinoidCover_iff {X : RigidSpace K} {ι : Type (u + 1)}
     (U : ι → AffinoidDomain K X) :
     IsAdmissibleAffinoidCover K U ↔
-      AdmissibleOpen.IsCover K (fun i ↦ (U i).toAdmissibleOpen) (AdmissibleOpen.top K X) := sorry
+      AdmissibleOpen.IsCover K (fun i ↦ (U i).toAdmissibleOpen) (AdmissibleOpen.top K X) := Iff.rfl
 /-- An admissible affinoid cover of a rigid space. -/
 structure AffinoidCover (X : RigidSpace K) : Type (u + 2) where
   /-- The indexing type of the cover. -/
@@ -1595,10 +1747,14 @@ end AffinoidCover
 def IsClosedImmersion {X Y : RigidSpace K} (f : X ⟶ Y) : Prop := sorry
 
 /-- Every point has an admissible affinoid neighborhood. -/
-def IsLocallyAffinoid (X : RigidSpace K) : Prop := sorry
+def IsLocallyAffinoid (X : RigidSpace K) : Prop :=
+  ∀ x : Point K X, ∃ U : AffinoidDomain K X, x ∈ U.carrier
 
 /-- Intersections of quasi-compact admissible opens are quasi-compact. -/
-def IsQuasiSeparated (X : RigidSpace K) : Prop := sorry
+def IsQuasiSeparated (X : RigidSpace K) : Prop :=
+  ∀ U V : AffinoidDomain K X,
+    AdmissibleOpen.IsQuasiCompact K
+      (AdmissibleOpen.inter K U.toAdmissibleOpen V.toAdmissibleOpen)
 
 /-- The rigid space has an admissible affinoid cover of finite type. -/
 def HasAffinoidCoverOfFiniteType (X : RigidSpace K) : Prop :=
@@ -1608,20 +1764,21 @@ def HasAffinoidCoverOfFiniteType (X : RigidSpace K) : Prop :=
 abbrev IsParacompact (X : RigidSpace K) : Prop := HasAffinoidCoverOfFiniteType K X
 
 /-- The diagonal is a closed immersion. -/
-def IsSeparated (X : RigidSpace K) : Prop := sorry
+def IsSeparated (X : RigidSpace K) : Prop :=
+  IsClosedImmersion K (CategoryTheory.Limits.prod.lift (𝟙 X) (𝟙 X))
 
 /-- Every rigid analytic space is locally affinoid by definition. -/
 theorem isLocallyAffinoid (X : RigidSpace K) : IsLocallyAffinoid K X := sorry
 
 /-- Local affinoidness is characterized by affinoid domains through every point. -/
 theorem isLocallyAffinoid_iff (X : RigidSpace K) :
-    IsLocallyAffinoid K X ↔ ∀ x : Point K X, ∃ U : AffinoidDomain K X, x ∈ U.carrier := sorry
+    IsLocallyAffinoid K X ↔ ∀ x : Point K X, ∃ U : AffinoidDomain K X, x ∈ U.carrier := Iff.rfl
 
 /-- Quasi-separatedness is characterized by quasi-compact intersections of affinoid domains. -/
 theorem isQuasiSeparated_iff (X : RigidSpace K) :
     IsQuasiSeparated K X ↔ ∀ U V : AffinoidDomain K X,
       AdmissibleOpen.IsQuasiCompact K
-        (AdmissibleOpen.inter K U.toAdmissibleOpen V.toAdmissibleOpen) := sorry
+        (AdmissibleOpen.inter K U.toAdmissibleOpen V.toAdmissibleOpen) := Iff.rfl
 
 /-- The comparison finiteness condition is witnessed by an affinoid cover of finite type. -/
 theorem isParacompact_iff (X : RigidSpace K) :
@@ -1630,7 +1787,7 @@ theorem isParacompact_iff (X : RigidSpace K) :
 /-- Separatedness is characterized by the diagonal being a closed immersion. -/
 theorem isSeparated_iff (X : RigidSpace K) :
     IsSeparated K X ↔ IsClosedImmersion K
-      (CategoryTheory.Limits.prod.lift (𝟙 X) (𝟙 X)) := sorry
+      (CategoryTheory.Limits.prod.lift (𝟙 X) (𝟙 X)) := Iff.rfl
 
 /-- Local affinoidness is invariant under analytic isomorphism. -/
 theorem isLocallyAffinoid_iff_of_iso {X Y : RigidSpace K} (e : X ≅ Y) :
@@ -1678,11 +1835,18 @@ end AffinoidDomain
 noncomputable def pointsOfAffinoidEquiv {A : Type v} [CommRing A] [Algebra K A]
     (hA : IsAffinoidAlgebra K A) : Point K (ofAffinoid K hA) ≃ MaximalSpectrum A := sorry
 
+private theorem isAffinoidAlgebra_toRigid (A : Type v) [CommRing A] [Algebra K A]
+    (hA : IsAffinoidAlgebra K A) : Rigid.IsAffinoidAlgebra K A := by
+  rcases hA with ⟨P⟩
+  exact ⟨{ n := P.n, ideal := P.ideal, equiv := P.equiv }⟩
+
 /-- Pullback of maximal ideals along a morphism of affinoid algebras. -/
 noncomputable def maximalSpectrumComap {A : Type v} {B : Type w}
     [CommRing A] [Algebra K A] [CommRing B] [Algebra K B]
     (hA : IsAffinoidAlgebra K A) (hB : IsAffinoidAlgebra K B) (f : A →ₐ[K] B) :
-    MaximalSpectrum B → MaximalSpectrum A := sorry
+    MaximalSpectrum B → MaximalSpectrum A :=
+  Rigid.maximalSpectrumComap K (isAffinoidAlgebra_toRigid K A hA)
+    (isAffinoidAlgebra_toRigid K B hB) f
 
 /-- The underlying ideal of pullback on maximal spectra is ideal-theoretic comap. -/
 @[simp]
@@ -1690,12 +1854,15 @@ theorem maximalSpectrumComap_asIdeal {A : Type v} {B : Type w}
     [CommRing A] [Algebra K A] [CommRing B] [Algebra K B]
     (hA : IsAffinoidAlgebra K A) (hB : IsAffinoidAlgebra K B) (f : A →ₐ[K] B)
     (x : MaximalSpectrum B) :
-    (maximalSpectrumComap K hA hB f x).asIdeal = Ideal.comap f x.asIdeal := sorry
+    (maximalSpectrumComap K hA hB f x).asIdeal = Ideal.comap f x.asIdeal :=
+  Rigid.maximalSpectrumComap_asIdeal K (isAffinoidAlgebra_toRigid K A hA)
+    (isAffinoidAlgebra_toRigid K B hB) f x
 
 @[simp]
 theorem maximalSpectrumComap_id {A : Type v} [CommRing A] [Algebra K A]
     (hA : IsAffinoidAlgebra K A) :
-    maximalSpectrumComap K hA hA (AlgHom.id K A) = id := sorry
+    maximalSpectrumComap K hA hA (AlgHom.id K A) = id :=
+  Rigid.maximalSpectrumComap_id K (isAffinoidAlgebra_toRigid K A hA)
 
 @[simp]
 theorem maximalSpectrumComap_comp {A : Type v} {B : Type w} {C : Type z}
@@ -1703,7 +1870,9 @@ theorem maximalSpectrumComap_comp {A : Type v} {B : Type w} {C : Type z}
     (hA : IsAffinoidAlgebra K A) (hB : IsAffinoidAlgebra K B)
     (hC : IsAffinoidAlgebra K C) (f : A →ₐ[K] B) (g : B →ₐ[K] C) :
     maximalSpectrumComap K hA hC (g.comp f) =
-      maximalSpectrumComap K hA hB f ∘ maximalSpectrumComap K hB hC g := sorry
+      maximalSpectrumComap K hA hB f ∘ maximalSpectrumComap K hB hC g :=
+  Rigid.maximalSpectrumComap_comp K (isAffinoidAlgebra_toRigid K A hA)
+    (isAffinoidAlgebra_toRigid K B hB) (isAffinoidAlgebra_toRigid K C hC) f g
 
 /-- The morphism of affinoid rigid spaces induced contravariantly by an algebra homomorphism. -/
 noncomputable def ofAffinoidMap {A : Type v} {B : Type w}
@@ -1895,29 +2064,62 @@ structure AnalyticMorphismData (X Y : BerkovichSpace K) where
 
 namespace AnalyticMorphismData
 
-noncomputable def id (X : BerkovichSpace K) : AnalyticMorphismData K X X := sorry
+noncomputable def id (X : BerkovichSpace K) : AnalyticMorphismData K X X where
+  base x := x
+  continuous_base := continuous_id
+  preimage U := U
+  mem_preimage _ _ := Iff.rfl
+  preimage_mono h := h
+  pullback U := AlgHom.id K (StructureSheaf.Sections K U)
+  pullback_restriction := by
+    intros
+    rw [AlgHom.comp_id, AlgHom.id_comp]
+  stalkMap x := AlgHom.id K (StructureSheaf.Stalk K X x)
+  stalkMap_isLocal _ := ⟨fun _ h => by simpa only [AlgHom.id_apply] using h⟩
+  pullback_germ := by
+    intros
+    rfl
 
 noncomputable def comp {X Y Z : BerkovichSpace K}
     (f : AnalyticMorphismData K X Y) (g : AnalyticMorphismData K Y Z) :
-    AnalyticMorphismData K X Z := sorry
+    AnalyticMorphismData K X Z where
+  base x := g.base (f.base x)
+  continuous_base := g.continuous_base.comp f.continuous_base
+  preimage U := f.preimage (g.preimage U)
+  mem_preimage x U := (f.mem_preimage x (g.preimage U)).trans (g.mem_preimage (f.base x) U)
+  preimage_mono h := f.preimage_mono (g.preimage_mono h)
+  pullback U := (f.pullback (g.preimage U)).comp (g.pullback U)
+  pullback_restriction := by
+    intro U V hUV
+    rw [← AlgHom.comp_assoc, f.pullback_restriction (g.preimage_mono hUV),
+      AlgHom.comp_assoc, g.pullback_restriction hUV, ← AlgHom.comp_assoc]
+  stalkMap x := (f.stalkMap x).comp (g.stalkMap (f.base x))
+  stalkMap_isLocal x := by
+    refine ⟨fun a ha => ?_⟩
+    exact (g.stalkMap_isLocal (f.base x)).map_nonunit a
+      ((f.stalkMap_isLocal x).map_nonunit _ ha)
+  pullback_germ := by
+    intro x U hx s
+    simp only [AlgHom.comp_apply]
+    rw [g.pullback_germ, f.pullback_germ]
 
 @[simp]
-theorem id_base (X : BerkovichSpace K) : (id K X).base = _root_.id := sorry
+theorem id_base (X : BerkovichSpace K) : (id K X).base = _root_.id := rfl
 
 @[simp]
 theorem id_preimage (X : BerkovichSpace K)
-    (U : TopologicalSpace.Opens (Point K X)) : (id K X).preimage U = U := sorry
+    (U : TopologicalSpace.Opens (Point K X)) : (id K X).preimage U = U := rfl
 
 @[simp]
 theorem comp_base {X Y Z : BerkovichSpace K}
     (f : AnalyticMorphismData K X Y) (g : AnalyticMorphismData K Y Z) :
-    (comp K f g).base = g.base ∘ f.base := sorry
+    (comp K f g).base = g.base ∘ f.base := rfl
 
 @[simp]
 theorem comp_preimage {X Y Z : BerkovichSpace K}
     (f : AnalyticMorphismData K X Y) (g : AnalyticMorphismData K Y Z)
     (U : TopologicalSpace.Opens (Point K Z)) :
-    (comp K f g).preimage U = f.preimage (g.preimage U) := sorry
+    (comp K f g).preimage U = f.preimage (g.preimage U) := rfl
 
 end AnalyticMorphismData
 
@@ -1954,7 +2156,6 @@ def IsStrict {X : BerkovichSpace K} (U : AffinoidDomain K X) : Prop := sorry
 
 end AffinoidDomain
 
-
 /-- Restriction of a Berkovich space to an affinoid domain. -/
 noncomputable def restrictToAffinoidDomain {X : BerkovichSpace K}
     (U : AffinoidDomain K X) : BerkovichSpace K := sorry
@@ -1964,40 +2165,44 @@ noncomputable def pointsRestrictToAffinoidDomainHomeomorph {X : BerkovichSpace K
     (U : AffinoidDomain K X) :
     Point K (restrictToAffinoidDomain K U) ≃ₜ ↥U.carrier := sorry
 /-- Every point has an affinoid neighborhood. -/
-def IsGood (X : BerkovichSpace K) : Prop := sorry
+def IsGood (X : BerkovichSpace K) : Prop :=
+  ∀ x : Point K X, ∃ U : AffinoidDomain K X, x ∈ interior U.carrier
 
 /-- The analytic atlas uses strict affinoid algebras. -/
-def IsStrict (X : BerkovichSpace K) : Prop := sorry
+def IsStrict (X : BerkovichSpace K) : Prop :=
+  ∀ x : Point K X, ∃ U : AffinoidDomain K X, x ∈ U.carrier ∧ U.IsStrict
 
 /-- The underlying topological space is Hausdorff and paracompact.
 
 Berkovich's convention in the source comparison theorem includes Hausdorffness in the word
 `paracompact`; Mathlib's `ParacompactSpace` does not. -/
-def IsParacompact (X : BerkovichSpace K) : Prop := sorry
+def IsParacompact (X : BerkovichSpace K) : Prop :=
+  T2Space (Point K X) ∧ ParacompactSpace (Point K X)
 
 /-- The underlying topological space is Hausdorff. -/
-def IsHausdorff (X : BerkovichSpace K) : Prop := sorry
+def IsHausdorff (X : BerkovichSpace K) : Prop :=
+  T2Space (Point K X)
 
 /-- Goodness means that every point lies in the interior of an affinoid domain. -/
 theorem isGood_iff (X : BerkovichSpace K) :
-    IsGood K X ↔ ∀ x : Point K X, ∃ U : AffinoidDomain K X, x ∈ interior U.carrier := sorry
+    IsGood K X ↔ ∀ x : Point K X, ∃ U : AffinoidDomain K X, x ∈ interior U.carrier := Iff.rfl
 
 /-- Strictness means that every point belongs to a strict affinoid domain. -/
 theorem isStrict_iff (X : BerkovichSpace K) :
     IsStrict K X ↔ ∀ x : Point K X, ∃ U : AffinoidDomain K X,
-      x ∈ U.carrier ∧ U.IsStrict := sorry
+      x ∈ U.carrier ∧ U.IsStrict := Iff.rfl
 
 /-- Berkovich paracompactness agrees with Hausdorff paracompactness of the point topology. -/
 theorem isParacompact_iff (X : BerkovichSpace K) :
-    IsParacompact K X ↔ T2Space (Point K X) ∧ ParacompactSpace (Point K X) := sorry
+    IsParacompact K X ↔ T2Space (Point K X) ∧ ParacompactSpace (Point K X) := Iff.rfl
 
 /-- Berkovich Hausdorffness agrees with the Hausdorff property of the point-set topology. -/
 theorem isHausdorff_iff (X : BerkovichSpace K) :
-    IsHausdorff K X ↔ T2Space (Point K X) := sorry
+    IsHausdorff K X ↔ T2Space (Point K X) := Iff.rfl
 
 /-- A paracompact Berkovich space is Hausdorff under the source convention. -/
 theorem isHausdorff_of_isParacompact {X : BerkovichSpace K} (hX : IsParacompact K X) :
-    IsHausdorff K X := sorry
+    IsHausdorff K X := hX.1
 
 /-- Goodness is invariant under analytic isomorphism. -/
 theorem isGood_iff_of_iso {X Y : BerkovichSpace K} (e : X ≅ Y) :
@@ -2009,11 +2214,31 @@ theorem isStrict_iff_of_iso {X Y : BerkovichSpace K} (e : X ≅ Y) :
 
 /-- Paracompactness is invariant under analytic isomorphism. -/
 theorem isParacompact_iff_of_iso {X Y : BerkovichSpace K} (e : X ≅ Y) :
-    IsParacompact K X ↔ IsParacompact K Y := sorry
+    IsParacompact K X ↔ IsParacompact K Y := by
+  let h := Point.homeomorphOfIso K e
+  constructor
+  · rintro ⟨hT2, hpara⟩
+    letI := hT2
+    exact ⟨h.t2Space, h.paracompactSpace_iff.mp hpara⟩
+  · rintro ⟨hT2, hpara⟩
+    letI := hT2
+    exact ⟨h.symm.t2Space, h.paracompactSpace_iff.mpr hpara⟩
 
 /-- Hausdorffness is invariant under analytic isomorphism. -/
 theorem isHausdorff_iff_of_iso {X Y : BerkovichSpace K} (e : X ≅ Y) :
-    IsHausdorff K X ↔ IsHausdorff K Y := sorry
+    IsHausdorff K X ↔ IsHausdorff K Y := by
+  let h := Point.homeomorphOfIso K e
+  constructor
+  · intro hT2
+    change T2Space (Point K X) at hT2
+    change T2Space (Point K Y)
+    letI := hT2
+    exact h.t2Space
+  · intro hT2
+    change T2Space (Point K Y) at hT2
+    change T2Space (Point K X)
+    letI := hT2
+    exact h.symm.t2Space
 
 /-- The Berkovich space associated to a strict affinoid algebra. -/
 noncomputable def ofAffinoid {A : Type v} [CommRing A] [Algebra K A]
@@ -2138,7 +2363,8 @@ theorem isParacompact_ofAffinoid {A : Type v} [CommRing A] [Algebra K A]
 
 /-- An affinoid Berkovich space is Hausdorff. -/
 theorem isHausdorff_ofAffinoid {A : Type v} [CommRing A] [Algebra K A]
-    (hA : IsAffinoidAlgebra K A) : IsHausdorff K (ofAffinoid K hA) := sorry
+    (hA : IsAffinoidAlgebra K A) : IsHausdorff K (ofAffinoid K hA) :=
+  isHausdorff_of_isParacompact K (isParacompact_ofAffinoid K hA)
 
 end BerkovichSpace
 
@@ -2174,19 +2400,29 @@ abbrev ComparisonBerkovichSpace := (berkovichComparisonProperty K).FullSubcatego
 
 /-- Quasi-separatedness is invariant under analytic isomorphism. -/
 theorem quasiSeparatedRigidProperty_isClosedUnderIsomorphisms :
-    (quasiSeparatedRigidProperty K).IsClosedUnderIsomorphisms := sorry
+    (quasiSeparatedRigidProperty K).IsClosedUnderIsomorphisms where
+  of_iso e hX := (RigidSpace.isQuasiSeparated_iff_of_iso K e).mp hX
 
 /-- The Hausdorff strict property is invariant under analytic isomorphism. -/
 theorem hausdorffStrictBerkovichProperty_isClosedUnderIsomorphisms :
-    (hausdorffStrictBerkovichProperty K).IsClosedUnderIsomorphisms := sorry
+    (hausdorffStrictBerkovichProperty K).IsClosedUnderIsomorphisms where
+  of_iso e hX :=
+    ⟨(BerkovichSpace.isHausdorff_iff_of_iso K e).mp hX.1,
+      (BerkovichSpace.isStrict_iff_of_iso K e).mp hX.2⟩
 
 /-- The rigid comparison property is invariant under analytic isomorphism. -/
 theorem rigidComparisonProperty_isClosedUnderIsomorphisms :
-    (rigidComparisonProperty K).IsClosedUnderIsomorphisms := sorry
+    (rigidComparisonProperty K).IsClosedUnderIsomorphisms where
+  of_iso e hX :=
+    ⟨(RigidSpace.isQuasiSeparated_iff_of_iso K e).mp hX.1,
+      (RigidSpace.hasAffinoidCoverOfFiniteType_iff_of_iso K e).mp hX.2⟩
 
 /-- The Berkovich comparison property is invariant under analytic isomorphism. -/
 theorem berkovichComparisonProperty_isClosedUnderIsomorphisms :
-    (berkovichComparisonProperty K).IsClosedUnderIsomorphisms := sorry
+    (berkovichComparisonProperty K).IsClosedUnderIsomorphisms where
+  of_iso e hX :=
+    ⟨(BerkovichSpace.isStrict_iff_of_iso K e).mp hX.1,
+      (BerkovichSpace.isParacompact_iff_of_iso K e).mp hX.2⟩
 
 /-- An affinoid algebra gives an object of the rigid comparison subcategory. -/
 noncomputable def comparisonRigidSpaceOfAffinoid {A : Type v} [CommRing A] [Algebra K A]
@@ -2218,7 +2454,6 @@ theorem comparisonRigidSpaceOfAffinoid_obj {A : Type v} [CommRing A] [Algebra K 
 theorem comparisonBerkovichSpaceOfAffinoid_obj {A : Type v} [CommRing A] [Algebra K A]
     (hA : IsAffinoidAlgebra K A) :
     (comparisonBerkovichSpaceOfAffinoid K hA).obj = BerkovichSpace.ofAffinoid K hA := sorry
-
 
 /-- Forgetting the comparison-subcategory structure recovers the usual affinoid rigid morphism. -/
 theorem comparisonRigidSpaceOfAffinoidMap_forget
@@ -2263,21 +2498,27 @@ noncomputable def berkovichToRigid_fullyFaithful : (berkovichToRigid K).FullyFai
 
 /-- Inclusion of the paracompact rigid comparison range into quasi-separated rigid spaces. -/
 noncomputable def comparisonRigidToQuasiSeparated :
-    ComparisonRigidSpace K ⥤ QuasiSeparatedRigidSpace K := sorry
+    ComparisonRigidSpace K ⥤ QuasiSeparatedRigidSpace K :=
+  ObjectProperty.ιOfLE (fun _ hX => hX.1)
 
 /-- The rigid comparison inclusion has the expected underlying rigid space. -/
 noncomputable def comparisonRigidToQuasiSeparatedCompιIso :
     comparisonRigidToQuasiSeparated K ⋙ (quasiSeparatedRigidProperty K).ι ≅
-      (rigidComparisonProperty K).ι := sorry
+      (rigidComparisonProperty K).ι :=
+  ObjectProperty.ιOfLECompιIso (fun _ hX => hX.1)
 
 /-- Inclusion of paracompact strict Berkovich spaces into Hausdorff strict Berkovich spaces. -/
 noncomputable def comparisonBerkovichToHausdorffStrict :
-    ComparisonBerkovichSpace K ⥤ HausdorffStrictBerkovichSpace K := sorry
+    ComparisonBerkovichSpace K ⥤ HausdorffStrictBerkovichSpace K :=
+  ObjectProperty.ιOfLE fun _ hX =>
+    ⟨BerkovichSpace.isHausdorff_of_isParacompact K hX.2, hX.1⟩
 
 /-- The Berkovich comparison inclusion has the expected underlying Berkovich space. -/
 noncomputable def comparisonBerkovichToHausdorffStrictCompιIso :
     comparisonBerkovichToHausdorffStrict K ⋙ (hausdorffStrictBerkovichProperty K).ι ≅
-      (berkovichComparisonProperty K).ι := sorry
+      (berkovichComparisonProperty K).ι :=
+  ObjectProperty.ιOfLECompιIso fun _ hX =>
+    ⟨BerkovichSpace.isHausdorff_of_isParacompact K hX.2, hX.1⟩
 
 /-- The restriction of the canonical functor to the paracompact comparison subcategories. -/
 noncomputable def comparisonBerkovichToRigid :

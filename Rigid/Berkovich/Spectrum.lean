@@ -8,12 +8,12 @@ import Mathlib.Topology.Maps.Basic
 set_option linter.style.header false
 
 /-!
-# The Berkovich spectrum of a normed ring
+# The Berkovich spectrum of a seminormed ring
 
-The Berkovich spectrum of a normed ring consists of the multiplicative real-valued seminorms
+The Berkovich spectrum of a seminormed ring consists of the multiplicative real-valued seminorms
 bounded by the ring norm. It carries the topology of pointwise convergence. This file develops the
 elementary evaluation, separation, kernel, and compactness API. It also proves that every point over
-a nonarchimedean commutative normed ring is nonarchimedean. Nonemptiness for nonzero complete
+a nonarchimedean commutative seminormed ring is nonarchimedean. Nonemptiness for nonzero complete
 commutative normed rings is a deeper result and is left to a later file.
 -/
 
@@ -24,9 +24,9 @@ universe u v
 
 namespace Rigid
 
-variable (R : Type u) [NormedRing R]
+variable (R : Type u) [SeminormedRing R]
 
-/-- A point of the Berkovich spectrum of a normed ring: a multiplicative seminorm bounded by the
+/-- A point of the Berkovich spectrum of a seminormed ring: a multiplicative seminorm bounded by the
 ring norm. The bound is normalized to be contractive. -/
 structure BerkovichSpectrum where
   seminorm : MulRingSeminorm R
@@ -103,7 +103,7 @@ theorem kernel_isPrime (x : BerkovichSpectrum R) : x.kernel.IsPrime := by
     · exact Or.inr ((mem_kernel_iff R x b).mpr hb)
 
 /-- Pull back a Berkovich point along a norm-nonincreasing ring homomorphism. -/
-def comap {S : Type v} [NormedRing S] (f : R →+* S) (hf : ∀ a, ‖f a‖ ≤ ‖a‖)
+def comap {S : Type v} [SeminormedRing S] (f : R →+* S) (hf : ∀ a, ‖f a‖ ≤ ‖a‖)
     (x : BerkovichSpectrum S) : BerkovichSpectrum R where
   seminorm :=
     { toFun := fun a ↦ x (f a)
@@ -115,7 +115,8 @@ def comap {S : Type v} [NormedRing S] (f : R →+* S) (hf : ∀ a, ‖f a‖ ≤
   le_norm' a := (le_norm S x (f a)).trans (hf a)
 
 @[simp]
-theorem comap_apply {S : Type v} [NormedRing S] (f : R →+* S) (hf : ∀ a, ‖f a‖ ≤ ‖a‖)
+theorem comap_apply {S : Type v} [SeminormedRing S] (f : R →+* S)
+    (hf : ∀ a, ‖f a‖ ≤ ‖a‖)
     (x : BerkovichSpectrum S) (a : R) : comap R f hf x a = x (f a) :=
   rfl
 
@@ -148,7 +149,8 @@ theorem continuous_iff_eval {X : Type v} [TopologicalSpace X] {f : X → Berkovi
   exact continuous_pi_iff
 
 /-- Pullback of Berkovich points along a norm-nonincreasing ring homomorphism is continuous. -/
-theorem continuous_comap {S : Type v} [NormedRing S] (f : R →+* S) (hf : ∀ a, ‖f a‖ ≤ ‖a‖) :
+theorem continuous_comap {S : Type v} [SeminormedRing S] (f : R →+* S)
+    (hf : ∀ a, ‖f a‖ ≤ ‖a‖) :
     Continuous (comap R f hf) :=
   (continuous_iff_eval R).2 fun a ↦ continuous_eval S (f a)
 
@@ -207,7 +209,7 @@ private theorem isClosed_range_coe :
     exact isClosed_iInter fun a ↦ isClosed_le (by fun_prop) (by fun_prop)
   exact hZ.inter (hO.inter (hA.inter (hN.inter (hM.inter hB))))
 
-/-- The Berkovich spectrum of every normed ring is compact. -/
+/-- The Berkovich spectrum of every seminormed ring is compact. -/
 theorem isCompact_univ : IsCompact (Set.univ : Set (BerkovichSpectrum R)) := by
   rw [(isEmbedding_coe R).isCompact_iff]
   rw [Set.image_univ]
@@ -220,7 +222,7 @@ theorem isCompact_univ : IsCompact (Set.univ : Set (BerkovichSpectrum R)) := by
 noncomputable instance berkovichSpectrumCompactSpace : CompactSpace (BerkovichSpectrum R) :=
   isCompact_univ_iff.mp (isCompact_univ R)
 
-private theorem apply_sum_le_sum {S : Type u} [NormedRing S]
+private theorem apply_sum_le_sum {S : Type u} [SeminormedRing S]
     (x : BerkovichSpectrum S) {ι : Type v} (s : Finset ι) (f : ι → S) :
     x (∑ i ∈ s, f i) ≤ ∑ i ∈ s, x (f i) := by
   classical
@@ -230,7 +232,7 @@ private theorem apply_sum_le_sum {S : Type u} [NormedRing S]
     simp only [Finset.sum_insert hi]
     exact (map_add_le S x (f i) (∑ j ∈ s, f j)).trans (add_le_add_right ih _)
 
-private theorem norm_natCast_le_norm_one {S : Type u} [NormedRing S] [IsUltrametricDist S]
+private theorem norm_natCast_le_norm_one {S : Type u} [SeminormedRing S] [IsUltrametricDist S]
     (n : ℕ) : ‖(n : S)‖ ≤ ‖(1 : S)‖ := by
   induction n with
   | zero => simp
@@ -238,9 +240,9 @@ private theorem norm_natCast_le_norm_one {S : Type u} [NormedRing S] [IsUltramet
     rw [Nat.cast_succ]
     exact (IsUltrametricDist.norm_add_le_max (n : S) 1).trans (max_le ih le_rfl)
 
-/-- A bounded multiplicative seminorm on a nonarchimedean commutative normed ring is
+/-- A bounded multiplicative seminorm on a nonarchimedean commutative seminormed ring is
 nonarchimedean. -/
-theorem map_add_le_max {S : Type u} [NormedCommRing S] [IsUltrametricDist S]
+theorem map_add_le_max {S : Type u} [SeminormedCommRing S] [IsUltrametricDist S]
     (x : BerkovichSpectrum S) (a b : S) : x (a + b) ≤ max (x a) (x b) := by
   classical
   let M := max (x a) (x b)

@@ -8,7 +8,7 @@ The first pass will treat a complete nontrivially normed field `K` with
 - Tate algebras initially have finitely many variables and unit polyradius.
 - A strict affinoid algebra is a `K`-algebra isomorphic to a quotient of a Tate algebra; no norm or
   topology is part of the affinoidness predicate.
-- The unrestricted Berkovich spectrum of a normed ring consists of contractive multiplicative
+- The unrestricted Berkovich spectrum of a seminormed ring consists of contractive multiplicative
   real-valued seminorms. For geometry over `K`, `BerkovichSpectrumOver K A` imposes that the
   seminorm restricts to the given norm on `K`.
 - Global spaces and morphisms will be built only after the affinoid theory and its sheaf theorem are
@@ -37,6 +37,7 @@ Reuse `MvPowerSeries.IsRestricted` from mathlib for the underlying restricted po
    **Done** (`TateAlgebra/NormedRing`, `TateAlgebra/UniversalProperty`); neither completeness of `K`
    nor finiteness of the variable set was needed.
 5. Extend the universal property from tuples of norm at most one to power-bounded tuples.
+   **Done** (`TateAlgebra/PowerBoundedUniversalProperty`).
 6. Generalize to positive polyradii only after the strict unit-radius API is stable.
 
 The multiplicativity proof uses the largest norm-attaining coefficient for a monomial order. In the
@@ -109,10 +110,10 @@ geometric objects.
 
 ### 5. Berkovich spaces
 
-1. Put the evaluation topology on the Berkovich spectrum of a normed ring. **Done**
+1. Put the evaluation topology on the Berkovich spectrum of a seminormed ring. **Done**
    (`Berkovich/Spectrum`).
 2. Prove nonemptiness, compactness, and Hausdorffness. **Done**: compactness and Hausdorffness hold
-   for every normed ring, while nonemptiness holds for every nonzero commutative normed ring.
+   for every seminormed ring, while nonemptiness holds for every nonzero commutative normed ring.
    Completeness is unnecessary.
 3. Develop pointwise evaluation, prime kernels, and contravariance. The basic evaluation, kernel,
    norm-nonincreasing pullback, and nonarchimedeanity APIs are **done**.
@@ -122,8 +123,10 @@ geometric objects.
    a normed `K`-algebra is automatically relative, so the two spectra are homeomorphic and the
    relative spectrum is nonempty whenever the algebra is nonzero.
 5. Define completed residue fields and evaluation maps. **Done**
-   (`Berkovich/CompletedResidue`): quotient by the prime kernel, extend the valuation to the
-   fraction field, complete, and recover the point seminorm as the norm of evaluation.
+   (`Berkovich/CompletedResidue`, `Berkovich/CompletedResidueFunctoriality`): quotient by the prime
+   kernel, extend the valuation to the fraction field, complete, recover the point seminorm as the
+   norm of evaluation, and construct the isometric maps on completed residues induced by morphisms
+   relating Berkovich points, with identity and composition laws.
 6. Define affinoid domains and analytic functions. The closed compact rational-domain loci and
    denominator nonvanishing for rational data are **done** (`Berkovich/AffinoidDomain`); their
    localization models and analytic function rings remain open.
