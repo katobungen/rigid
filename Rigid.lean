@@ -10,6 +10,7 @@ import Rigid.Berkovich.CompletedResidue
 import Rigid.Berkovich.CompletedResidueFunctoriality
 import Rigid.Berkovich.GeneralSmoothing
 import Rigid.Berkovich.Nonempty
+import Rigid.Berkovich.RationalLocalization
 import Rigid.Berkovich.RelativeNonempty
 import Rigid.Berkovich.RelativeSpectrum
 import Rigid.Berkovich.Spectrum

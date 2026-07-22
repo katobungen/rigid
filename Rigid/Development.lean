@@ -6,7 +6,7 @@ import Rigid.Berkovich.Nonempty
 import Rigid.Berkovich.RelativeSpectrum
 import Rigid.Berkovich.RelativeNonempty
 import Rigid.Berkovich.CompletedResidue
-import Rigid.Berkovich.CompletedResidueFunctoriality
+import Rigid.Berkovich.RationalLocalization
 import Rigid.Berkovich.AffinoidDomain
 import Rigid.AffinoidAlgebra.QuotientNorm
 import Rigid.AffinoidAlgebra.QuotientTopology
@@ -1142,144 +1142,6 @@ def rationalDomainSet {n : ℕ} (g : A) (f : Fin n → A) : Set (BerkovichSpectr
 abbrev RationalDomain {n : ℕ} (g : A) (f : Fin n → A) :=
   ↥(rationalDomainSet K A g f)
 
-private def toRigid
-    {K : Type u} [NontriviallyNormedField K] [CompleteSpace K] [IsUltrametricDist K]
-    {B : Type v} [NormedCommRing B] [NormedAlgebra K B]
-    (x : BerkovichSpectrumOver K B) : Rigid.BerkovichSpectrumOver K B where
-  toBerkovichSpectrum :=
-    ⟨x.toBerkovichSpectrum.seminorm, x.toBerkovichSpectrum.le_norm'⟩
-  map_algebraMap' := x.map_algebraMap'
-
-@[simp]
-private theorem toRigid_apply
-    {K : Type u} [NontriviallyNormedField K] [CompleteSpace K] [IsUltrametricDist K]
-    {B : Type v} [NormedCommRing B] [NormedAlgebra K B]
-    (x : BerkovichSpectrumOver K B) (b : B) : toRigid x b = x b := rfl
-
-private theorem eval_continuousAlgHom_le_norm
-    {K : Type u} [NontriviallyNormedField K] [CompleteSpace K] [IsUltrametricDist K]
-    {B : Type v} [NormedCommRing B] [NormedAlgebra K B]
-    {C : Type w} [NormedCommRing C] [NormedAlgebra K C]
-    (φ : ContinuousAlgHom K B C) (x : BerkovichSpectrumOver K C) (b : B) :
-    x (φ b) ≤ ‖b‖ := by
-  apply contraction_of_isPowMul_of_boundedWrt (SeminormedRing.toRingSeminorm B)
-    (nβ := fun c : C ↦ x c)
-  · intro c n hn
-    exact map_pow x.toBerkovichSpectrum.seminorm c n
-  · obtain ⟨M, hM, hφ⟩ := SemilinearMapClass.bound_of_continuous φ φ.continuous
-    exact ⟨M, hM, fun c ↦ (BerkovichSpectrum.le_norm C x.toBerkovichSpectrum (φ c)).trans
-      (hφ c)⟩
-
-private noncomputable def pullback
-    {K : Type u} [NontriviallyNormedField K] [CompleteSpace K] [IsUltrametricDist K]
-    {B : Type v} [NormedCommRing B] [NormedAlgebra K B]
-    {C : Type w} [NormedCommRing C] [NormedAlgebra K C]
-    (φ : ContinuousAlgHom K B C) (x : BerkovichSpectrumOver K C) :
-    BerkovichSpectrumOver K B where
-  toBerkovichSpectrum :=
-    { seminorm :=
-        { toFun := fun b ↦ x (φ b)
-          map_zero' := by simp
-          add_le' := by
-            intro a b
-            simpa only [map_add] using
-              BerkovichSpectrum.map_add_le C x.toBerkovichSpectrum (φ a) (φ b)
-          neg' := by simp
-          map_one' := by simp
-          map_mul' := by simp }
-      le_norm' := eval_continuousAlgHom_le_norm φ x }
-  map_algebraMap' := by
-    intro r
-    change x (φ (algebraMap K B r)) = ‖r‖
-    calc
-      x (φ (algebraMap K B r)) = x (algebraMap K C r) :=
-        congrArg (fun c : C ↦ x c) (φ.commutes r)
-      _ = ‖r‖ := x.map_algebraMap' r
-
-@[simp]
-private theorem pullback_apply
-    {K : Type u} [NontriviallyNormedField K] [CompleteSpace K] [IsUltrametricDist K]
-    {B : Type v} [NormedCommRing B] [NormedAlgebra K B]
-    {C : Type w} [NormedCommRing C] [NormedAlgebra K C]
-    (φ : ContinuousAlgHom K B C) (x : BerkovichSpectrumOver K C) (b : B) :
-    pullback φ x b = x (φ b) := rfl
-
-private theorem apply_le_one_of_isPowerBounded
-    {K : Type u} [NontriviallyNormedField K] [CompleteSpace K] [IsUltrametricDist K]
-    {B : Type v} [NormedCommRing B] [NormedAlgebra K B]
-    (x : BerkovichSpectrumOver K B) {b : B} (hb : IsPowerBounded b) : x b ≤ 1 := by
-  rcases hb with ⟨M, hM⟩
-  by_contra h
-  have hxb : 1 < x b := lt_of_not_ge h
-  obtain ⟨n, hn⟩ := pow_unbounded_of_one_lt M hxb
-  apply not_le_of_gt hn
-  calc
-    x b ^ n = x (b ^ n) := (map_pow x.toBerkovichSpectrum.seminorm b n).symm
-    _ ≤ ‖b ^ n‖ := BerkovichSpectrum.le_norm B x.toBerkovichSpectrum _
-    _ ≤ M := hM ⟨n, rfl⟩
-
-private noncomputable def completedResidueContinuousAlgHom
-    {K : Type u} [NontriviallyNormedField K] [CompleteSpace K] [IsUltrametricDist K]
-    {B : Type v} [NormedCommRing B] [NormedAlgebra K B] [IsUltrametricDist B]
-    (x : Rigid.BerkovichSpectrumOver K B) :
-    ContinuousAlgHom K B (Rigid.BerkovichSpectrumOver.CompletedResidueField x) where
-  toAlgHom := Rigid.BerkovichSpectrumOver.completedResidueAlgHom x
-  cont :=
-    ((Rigid.BerkovichSpectrumOver.completedResidueAlgHom x).toLinearMap.mkContinuous 1
-      (fun b ↦ by
-        change ‖Rigid.BerkovichSpectrumOver.completedResidueAlgHom x b‖ ≤ 1 * ‖b‖
-        rw [Rigid.BerkovichSpectrumOver.norm_completedResidueAlgHom]
-        simpa using Rigid.BerkovichSpectrumOver.le_norm K B x b)).continuous
-
-@[simp]
-private theorem completedResidueContinuousAlgHom_apply
-    {K : Type u} [NontriviallyNormedField K] [CompleteSpace K] [IsUltrametricDist K]
-    {B : Type v} [NormedCommRing B] [NormedAlgebra K B] [IsUltrametricDist B]
-    (x : Rigid.BerkovichSpectrumOver K B) (b : B) :
-    completedResidueContinuousAlgHom x b =
-      Rigid.BerkovichSpectrumOver.completedResidueAlgHom x b := rfl
-
-@[simp]
-private theorem norm_completedResidueContinuousAlgHom
-    {K : Type u} [NontriviallyNormedField K] [CompleteSpace K] [IsUltrametricDist K]
-    {B : Type v} [NormedCommRing B] [NormedAlgebra K B] [IsUltrametricDist B]
-    (x : Rigid.BerkovichSpectrumOver K B) (b : B) :
-    ‖completedResidueContinuousAlgHom x b‖ = x b :=
-  Rigid.BerkovichSpectrumOver.norm_completedResidueAlgHom x b
-
-private noncomputable def ofContinuousAlgHom
-    {K : Type u} [NontriviallyNormedField K] [CompleteSpace K] [IsUltrametricDist K]
-    {B : Type v} [NormedCommRing B] [NormedAlgebra K B]
-    {L : Type w} [NormedField L] [NormedAlgebra K L]
-    (φ : ContinuousAlgHom K B L) (halg : ∀ r : K, ‖algebraMap K L r‖ = ‖r‖) :
-    BerkovichSpectrumOver K B where
-  toBerkovichSpectrum :=
-    { seminorm :=
-        { toFun := fun b ↦ ‖φ b‖
-          map_zero' := by simp
-          add_le' := by intro a b; simpa only [map_add] using norm_add_le (φ a) (φ b)
-          neg' := by simp
-          map_one' := by simp
-          map_mul' := by simp }
-      le_norm' := fun b ↦ by
-        change ‖φ b‖ ≤ ‖b‖
-        apply contraction_of_isPowMul (f := φ.toRingHom) (fun z n _ ↦ norm_pow z n)
-        exact SemilinearMapClass.bound_of_continuous φ φ.continuous }
-  map_algebraMap' := by
-    intro r
-    change ‖φ (algebraMap K B r)‖ = ‖r‖
-    calc
-      ‖φ (algebraMap K B r)‖ = ‖algebraMap K L r‖ := congrArg norm (φ.commutes r)
-      _ = ‖r‖ := halg r
-
-@[simp]
-private theorem ofContinuousAlgHom_apply
-    {K : Type u} [NontriviallyNormedField K] [CompleteSpace K] [IsUltrametricDist K]
-    {B : Type v} [NormedCommRing B] [NormedAlgebra K B]
-    {L : Type w} [NormedField L] [NormedAlgebra K L]
-    (φ : ContinuousAlgHom K B L) (halg : ∀ r : K, ‖algebraMap K L r‖ = ‖r‖) (b : B) :
-    ofContinuousAlgHom φ halg b = ‖φ b‖ := rfl
-
 namespace RationalDomain
 
 /-- The inclusion of a rational domain into its ambient relative spectrum. -/
@@ -1329,235 +1191,56 @@ theorem denominator_ne_zero {n : ℕ} {g : A} {f : Fin n → A}
     exact Ideal.span_le.2 hgenerators
   exact x.1.kernel_isPrime.ne_top (top_unique htop)
 
-private noncomputable def localizationSpectrumMap
-    {n : ℕ} {g : A} {f : Fin n → A} (_hgf : IsRationalDatum g f) :
-    BerkovichSpectrumOver K (RationalLocalization K A n g f) → RationalDomain K A g f :=
-  fun x ↦ ⟨BerkovichSpectrumOver.pullback (RationalLocalization.baseMap K A n g f) x, by
-    intro i
-    change x (RationalLocalization.baseMap K A n g f (f i)) ≤
-      x (RationalLocalization.baseMap K A n g f g)
-    rw [← RationalLocalization.baseMap_denominator_mul_coordinate K A n g f i,
-      BerkovichSpectrum.map_mul]
-    exact mul_le_of_le_one_right
-      (BerkovichSpectrum.nonneg _ x.toBerkovichSpectrum _)
-      (BerkovichSpectrumOver.apply_le_one_of_isPowerBounded x
-        (RationalLocalization.isPowerBounded_coordinate K A n g f i))⟩
-
-@[simp]
-private theorem localizationSpectrumMap_apply
-    {n : ℕ} {g : A} {f : Fin n → A} (hgf : IsRationalDatum g f)
-    (x : BerkovichSpectrumOver K (RationalLocalization K A n g f)) (a : A) :
-    ((localizationSpectrumMap K A hgf x).1 : A → ℝ) a =
-      x (RationalLocalization.baseMap K A n g f a) := rfl
-
-private theorem continuous_localizationSpectrumMap
-    {n : ℕ} {g : A} {f : Fin n → A} (hgf : IsRationalDatum g f) :
-    Continuous (localizationSpectrumMap K A hgf) := by
-  apply Continuous.subtype_mk
-  apply (BerkovichSpectrumOver.continuous_iff_eval K A).2
-  intro a
-  exact BerkovichSpectrumOver.continuous_eval K (RationalLocalization K A n g f)
-    (RationalLocalization.baseMap K A n g f a)
-
-private noncomputable def rationalDomainCoordinate
-    {n : ℕ} {g : A} {f : Fin n → A} (x : RationalDomain K A g f) :
-    Fin n → Rigid.BerkovichSpectrumOver.CompletedResidueField
-      (BerkovichSpectrumOver.toRigid x.1) := fun i ↦
-  BerkovichSpectrumOver.completedResidueContinuousAlgHom
-      (BerkovichSpectrumOver.toRigid x.1) (f i) /
-    BerkovichSpectrumOver.completedResidueContinuousAlgHom
-      (BerkovichSpectrumOver.toRigid x.1) g
-
-private theorem rationalDomainCoordinate_isPowerBounded
-    {n : ℕ} {g : A} {f : Fin n → A} (hgf : IsRationalDatum g f)
-    (x : RationalDomain K A g f) (i : Fin n) :
-    IsPowerBounded (rationalDomainCoordinate K A x i) := by
-  apply isPowerBounded_of_norm_le_one
-  rw [rationalDomainCoordinate, norm_div,
-    BerkovichSpectrumOver.norm_completedResidueContinuousAlgHom,
-    BerkovichSpectrumOver.norm_completedResidueContinuousAlgHom]
-  exact (div_le_one₀ (lt_of_le_of_ne
-    (BerkovichSpectrum.nonneg A x.1.toBerkovichSpectrum g)
-    (Ne.symm (denominator_ne_zero K A hgf x)))).2 (x.2 i)
-
-private theorem completedResidue_denominator_ne_zero
-    {n : ℕ} {g : A} {f : Fin n → A} (hgf : IsRationalDatum g f)
-    (x : RationalDomain K A g f) :
-    BerkovichSpectrumOver.completedResidueContinuousAlgHom
-      (BerkovichSpectrumOver.toRigid x.1) g ≠ 0 := by
-  rw [← norm_ne_zero_iff,
-    BerkovichSpectrumOver.norm_completedResidueContinuousAlgHom]
-  exact denominator_ne_zero K A hgf x
-
-private theorem rationalDomainCoordinate_relation
-    {n : ℕ} {g : A} {f : Fin n → A} (hgf : IsRationalDatum g f)
-    (x : RationalDomain K A g f) (i : Fin n) :
-    BerkovichSpectrumOver.completedResidueContinuousAlgHom
-        (BerkovichSpectrumOver.toRigid x.1) g * rationalDomainCoordinate K A x i =
-      BerkovichSpectrumOver.completedResidueContinuousAlgHom
-        (BerkovichSpectrumOver.toRigid x.1) (f i) :=
-  mul_div_cancel₀ _ (completedResidue_denominator_ne_zero K A hgf x)
-
-private noncomputable def rationalDomainLift
-    {n : ℕ} {g : A} {f : Fin n → A} (hgf : IsRationalDatum g f)
-    (x : RationalDomain K A g f) :
-    ContinuousAlgHom K (RationalLocalization K A n g f)
-      (Rigid.BerkovichSpectrumOver.CompletedResidueField
-        (BerkovichSpectrumOver.toRigid x.1)) :=
-  RationalLocalization.lift K A n g f
-    (BerkovichSpectrumOver.completedResidueContinuousAlgHom
-      (BerkovichSpectrumOver.toRigid x.1))
-    (rationalDomainCoordinate K A x)
-    (rationalDomainCoordinate_isPowerBounded K A hgf x)
-    (rationalDomainCoordinate_relation K A hgf x)
-
-@[simp]
-private theorem rationalDomainLift_baseMap
-    {n : ℕ} {g : A} {f : Fin n → A} (hgf : IsRationalDatum g f)
-    (x : RationalDomain K A g f) (a : A) :
-    rationalDomainLift K A hgf x (RationalLocalization.baseMap K A n g f a) =
-      BerkovichSpectrumOver.completedResidueContinuousAlgHom
-        (BerkovichSpectrumOver.toRigid x.1) a := by
-  exact congrArg (fun ψ : ContinuousAlgHom K A
-      (Rigid.BerkovichSpectrumOver.CompletedResidueField
-        (BerkovichSpectrumOver.toRigid x.1)) ↦ ψ a)
-    (RationalLocalization.lift_comp_baseMap K A n g f
-      (BerkovichSpectrumOver.completedResidueContinuousAlgHom
-        (BerkovichSpectrumOver.toRigid x.1))
-      (rationalDomainCoordinate K A x)
-      (rationalDomainCoordinate_isPowerBounded K A hgf x)
-      (rationalDomainCoordinate_relation K A hgf x))
-
-@[simp]
-private theorem rationalDomainLift_coordinate
-    {n : ℕ} {g : A} {f : Fin n → A} (hgf : IsRationalDatum g f)
-    (x : RationalDomain K A g f) (i : Fin n) :
-    rationalDomainLift K A hgf x (RationalLocalization.coordinate K A n g f i) =
-      rationalDomainCoordinate K A x i :=
-  RationalLocalization.lift_coordinate K A n g f
-    (BerkovichSpectrumOver.completedResidueContinuousAlgHom
-      (BerkovichSpectrumOver.toRigid x.1))
-    (rationalDomainCoordinate K A x)
-    (rationalDomainCoordinate_isPowerBounded K A hgf x)
-    (rationalDomainCoordinate_relation K A hgf x) i
-
-private noncomputable def rationalDomainSpectrumMap
-    {n : ℕ} {g : A} {f : Fin n → A} (hgf : IsRationalDatum g f) :
-    RationalDomain K A g f →
-      BerkovichSpectrumOver K (RationalLocalization K A n g f) := fun x ↦
-  BerkovichSpectrumOver.ofContinuousAlgHom (rationalDomainLift K A hgf x)
-    (Rigid.BerkovichSpectrumOver.norm_algebraMap_completedResidueField
-      (BerkovichSpectrumOver.toRigid x.1))
-
-private theorem localizationSpectrumMap_rightInverse
-    {n : ℕ} {g : A} {f : Fin n → A} (hgf : IsRationalDatum g f) :
-    Function.RightInverse (rationalDomainSpectrumMap K A hgf)
-      (localizationSpectrumMap K A hgf) := by
-  intro x
-  apply Subtype.ext
-  apply BerkovichSpectrumOver.ext K A
-  intro a
-  change ‖rationalDomainLift K A hgf x
-    (RationalLocalization.baseMap K A n g f a)‖ = x.1 a
-  rw [rationalDomainLift_baseMap,
-    BerkovichSpectrumOver.norm_completedResidueContinuousAlgHom]
-  rfl
-
-private theorem localizationSpectrumMap_leftInverse
-    {n : ℕ} {g : A} {f : Fin n → A} (hgf : IsRationalDatum g f) :
-    Function.LeftInverse (rationalDomainSpectrumMap K A hgf)
-      (localizationSpectrumMap K A hgf) := by
-  intro y
-  let x : RationalDomain K A g f := localizationSpectrumMap K A hgf y
-  let xr : Rigid.BerkovichSpectrumOver K A := BerkovichSpectrumOver.toRigid x.1
-  let yr : Rigid.BerkovichSpectrumOver K (RationalLocalization K A n g f) :=
-    BerkovichSpectrumOver.toRigid y
-  let base : A →ₐ[K] RationalLocalization K A n g f :=
-    RationalLocalization.baseMap K A n g f
-  have hxy : ∀ a, xr a = yr (base a) := fun _ ↦ rfl
-  let jAlg := Rigid.BerkovichSpectrumOver.completedResidueFieldAlgHom base xr yr hxy
-  let j : ContinuousAlgHom K
-      (Rigid.BerkovichSpectrumOver.CompletedResidueField xr)
-      (Rigid.BerkovichSpectrumOver.CompletedResidueField yr) :=
-    { toAlgHom := jAlg
-      cont := (Rigid.BerkovichSpectrumOver.isometry_completedResidueFieldAlgHom
-        base xr yr hxy).continuous }
-  let evalY := BerkovichSpectrumOver.completedResidueContinuousAlgHom yr
-  have hj : j.comp (rationalDomainLift K A hgf x) = evalY := by
-    apply RationalLocalization.hom_ext K A n g f
-    · apply ContinuousAlgHom.ext
-      intro a
-      change j (rationalDomainLift K A hgf x
-        (RationalLocalization.baseMap K A n g f a)) =
-          evalY (RationalLocalization.baseMap K A n g f a)
-      rw [rationalDomainLift_baseMap]
-      change jAlg
-          (Rigid.BerkovichSpectrumOver.completedResidueAlgHom xr a) =
-        Rigid.BerkovichSpectrumOver.completedResidueAlgHom yr (base a)
-      exact Rigid.BerkovichSpectrumOver.completedResidueFieldMap_completedResidueMap
-        base xr yr hxy a
-    · intro i
-      change j (rationalDomainLift K A hgf x
-        (RationalLocalization.coordinate K A n g f i)) =
-          evalY (RationalLocalization.coordinate K A n g f i)
-      rw [rationalDomainLift_coordinate]
-      change jAlg (rationalDomainCoordinate K A x i) =
-        Rigid.BerkovichSpectrumOver.completedResidueAlgHom yr
-          (RationalLocalization.coordinate K A n g f i)
-      rw [rationalDomainCoordinate]
-      change jAlg
-          (Rigid.BerkovichSpectrumOver.completedResidueAlgHom xr (f i) /
-            Rigid.BerkovichSpectrumOver.completedResidueAlgHom xr g) =
-        Rigid.BerkovichSpectrumOver.completedResidueAlgHom yr
-          (RationalLocalization.coordinate K A n g f i)
-      rw [map_div₀]
-      change
-        Rigid.BerkovichSpectrumOver.completedResidueFieldMap base xr yr hxy
-            (Rigid.BerkovichSpectrumOver.completedResidueMap xr (f i)) /
-          Rigid.BerkovichSpectrumOver.completedResidueFieldMap base xr yr hxy
-            (Rigid.BerkovichSpectrumOver.completedResidueMap xr g) =
-        Rigid.BerkovichSpectrumOver.completedResidueMap yr
-          (RationalLocalization.coordinate K A n g f i)
-      rw [
-        Rigid.BerkovichSpectrumOver.completedResidueFieldMap_completedResidueMap,
-        Rigid.BerkovichSpectrumOver.completedResidueFieldMap_completedResidueMap]
-      have hden : Rigid.BerkovichSpectrumOver.completedResidueAlgHom yr
-          (RationalLocalization.baseMap K A n g f g) ≠ 0 :=
-        ((RationalLocalization.isUnit_baseMap_denominator K A n g f hgf).map
-          (Rigid.BerkovichSpectrumOver.completedResidueAlgHom yr).toRingHom).ne_zero
-      apply (div_eq_iff hden).2
-      have hrel := congrArg
-        (fun b : RationalLocalization K A n g f ↦
-          Rigid.BerkovichSpectrumOver.completedResidueAlgHom yr b)
-        (RationalLocalization.baseMap_denominator_mul_coordinate K A n g f i)
-      simpa [base, RationalLocalization.baseMap_apply, mul_comm] using hrel.symm
-  apply BerkovichSpectrumOver.ext K (RationalLocalization K A n g f)
-  intro b
-  change ‖rationalDomainLift K A hgf x b‖ = y b
-  change ‖rationalDomainLift K A hgf x b‖ = yr b
-  rw [← BerkovichSpectrumOver.norm_completedResidueContinuousAlgHom yr b]
-  have hjb := congrArg (fun ψ : ContinuousAlgHom K
-      (RationalLocalization K A n g f)
-      (Rigid.BerkovichSpectrumOver.CompletedResidueField yr) ↦ ψ b) hj
-  rw [← hjb]
-  change ‖rationalDomainLift K A hgf x b‖ =
-    ‖jAlg (rationalDomainLift K A hgf x b)‖
-  symm
-  exact (Rigid.BerkovichSpectrumOver.isometry_completedResidueFieldAlgHom
-    base xr yr hxy).norm_map_of_map_zero (map_zero jAlg) _
-
 /-- The relative spectrum of a rational localization is its associated rational domain. -/
 noncomputable def localizationSpectrumHomeomorph {n : ℕ} {g : A} {f : Fin n → A}
     (hgf : IsRationalDatum g f) :
     BerkovichSpectrumOver K (RationalLocalization K A n g f) ≃ₜ
       RationalDomain K A g f := by
-  have hbij : Function.Bijective (localizationSpectrumMap K A hgf) :=
-    ⟨(localizationSpectrumMap_leftInverse K A hgf).injective,
-      (localizationSpectrumMap_rightInverse K A hgf).surjective⟩
-  have hhome : IsHomeomorph (localizationSpectrumMap K A hgf) :=
-    (isHomeomorph_iff_continuous_bijective).2
-      ⟨continuous_localizationSpectrumMap K A hgf, hbij⟩
-  exact hhome.homeomorph (localizationSpectrumMap K A hgf)
+  let P : Rigid.BerkovichSpectrumOver.RationalLocalizationPresentation K A
+      (RationalLocalization K A n g f) n g f :=
+    { isRationalDatum := hgf
+      baseMap := RationalLocalization.baseMap K A n g f
+      coordinate := RationalLocalization.coordinate K A n g f
+      baseMap_denominator_mul_coordinate :=
+        RationalLocalization.baseMap_denominator_mul_coordinate K A n g f
+      isPowerBounded_coordinate :=
+        RationalLocalization.isPowerBounded_coordinate K A n g f
+      isUnit_baseMap_denominator :=
+        RationalLocalization.isUnit_baseMap_denominator K A n g f hgf
+      lift := fun φ x hx hrel ↦ RationalLocalization.lift K A n g f φ x hx hrel
+      lift_comp_baseMap := fun φ x hx hrel ↦
+        RationalLocalization.lift_comp_baseMap K A n g f φ x hx hrel
+      lift_coordinate := fun φ x hx hrel i ↦
+        RationalLocalization.lift_coordinate K A n g f φ x hx hrel i
+      hom_ext := fun φ ψ hbase hcoordinate ↦
+        RationalLocalization.hom_ext K A n g f φ ψ hbase hcoordinate }
+  let spectrumEquiv : ∀ (B : Type v) [NormedCommRing B] [NormedAlgebra K B]
+      [CompleteSpace B] [IsUltrametricDist B],
+      BerkovichSpectrumOver K B ≃ₜ Rigid.BerkovichSpectrumOver K B := fun B _ _ _ _ ↦
+    { toFun := fun x ↦
+        { toBerkovichSpectrum :=
+            ⟨x.toBerkovichSpectrum.seminorm, x.toBerkovichSpectrum.le_norm'⟩
+          map_algebraMap' := x.map_algebraMap' }
+      invFun := fun x ↦
+        { toBerkovichSpectrum :=
+            ⟨x.toBerkovichSpectrum.seminorm, x.toBerkovichSpectrum.le_norm'⟩
+          map_algebraMap' := x.map_algebraMap' }
+      left_inv := by intro x; cases x; rfl
+      right_inv := by intro x; cases x; rfl
+      continuous_toFun :=
+        (Rigid.BerkovichSpectrumOver.continuous_iff_eval K B).2 fun b ↦
+          BerkovichSpectrumOver.continuous_eval K B b
+      continuous_invFun :=
+        (BerkovichSpectrumOver.continuous_iff_eval K B).2 fun b ↦
+          Rigid.BerkovichSpectrumOver.continuous_eval K B b }
+  let sourceEquiv := spectrumEquiv (RationalLocalization K A n g f)
+  let ambientEquiv := spectrumEquiv A
+  let domainEquiv : Rigid.BerkovichSpectrumOver.RationalDomain K A g f ≃ₜ
+      RationalDomain K A g f :=
+    ambientEquiv.symm.subtype fun _ ↦ Iff.rfl
+  exact sourceEquiv.trans
+    ((Rigid.BerkovichSpectrumOver.RationalDomain.localizationSpectrumHomeomorph K A P).trans
+      domainEquiv)
 
 /-- Under the rational-localization homeomorphism, evaluation of an ambient function is pullback
 along the canonical base map. -/
@@ -1567,7 +1250,6 @@ theorem localizationSpectrumHomeomorph_apply_baseMap
     (x : BerkovichSpectrumOver K (RationalLocalization K A n g f)) (a : A) :
     ((localizationSpectrumHomeomorph K A hgf x).1 : A → ℝ) a =
       x (RationalLocalization.baseMap K A n g f a) := by
-  change ((localizationSpectrumMap K A hgf x).1 : A → ℝ) a = _
   rfl
 
 end RationalDomain
