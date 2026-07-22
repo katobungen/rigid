@@ -11,6 +11,7 @@ import Rigid.AffinoidAlgebra.QuotientNorm
 import Rigid.AffinoidAlgebra.QuotientTopology
 import Rigid.AffinoidAlgebra.RationalDatum
 import Rigid.AffinoidAlgebra.RationalLocalization
+import Rigid.AffinoidAlgebra.ResidueNorm
 import Rigid.TateAlgebra.Complete
 import Rigid.TateAlgebra.Noetherian
 import Rigid.TateAlgebra.Multiplicative
@@ -339,7 +340,9 @@ noncomputable def residueTopology (P : AffinoidPresentation K A) : TopologicalSp
 
 /-- The quotient topology of an affinoid algebra is independent of its presentation. -/
 theorem residueTopology_eq (P Q : AffinoidPresentation K A) :
-    P.residueTopology = Q.residueTopology := sorry
+    P.residueTopology = Q.residueTopology :=
+  Rigid.residueTopology_eq_for_affinoidPresentationData K
+    P.ideal P.equiv Q.ideal Q.equiv
 
 /-- The quotient topology makes the target a topological ring. -/
 theorem residueIsTopologicalRing (P : AffinoidPresentation K A) :
@@ -356,13 +359,15 @@ theorem residueContinuousSMul (P : AffinoidPresentation K A) :
 structure. Unlike the induced topology, this norm can depend on the presentation. -/
 @[reducible]
 noncomputable def residueNormedCommRing (P : AffinoidPresentation K A) :
-    NormedCommRing A := sorry
+    NormedCommRing A :=
+  Rigid.residueNormedCommRing K A P.n P.ideal P.equiv
 
 /-- The residue norm makes the target a normed algebra over the ground field. -/
 @[reducible]
 noncomputable def residueNormedAlgebra (P : AffinoidPresentation K A) :
     letI := P.residueNormedCommRing
-    NormedAlgebra K A := sorry
+    NormedAlgebra K A :=
+  Rigid.residueNormedAlgebra K A P.n P.ideal P.equiv
 
 /-- The scalar embedding of the residue normed algebra agrees with the presentation map applied to
 constant Tate series. -/
@@ -371,16 +376,20 @@ theorem residueNormedAlgebra_algebraMap (P : AffinoidPresentation K A) (r : K) :
     letI : NormedCommRing A := P.residueNormedCommRing
     letI : NormedAlgebra K A := P.residueNormedAlgebra
     algebraMap K A r =
-      toAlgHom K A P (algebraMap K (TateAlgebra K (Fin P.n)) r) := sorry
+      toAlgHom K A P (algebraMap K (TateAlgebra K (Fin P.n)) r) :=
+  Rigid.residueNormedAlgebra_algebraMap K A P.n P.ideal P.equiv r
+
 /-- The residue norm is complete. -/
 theorem residueCompleteSpace (P : AffinoidPresentation K A) :
     letI := P.residueNormedCommRing
-    CompleteSpace A := sorry
+    CompleteSpace A :=
+  Rigid.residueCompleteSpace K A P.n P.ideal P.equiv
 
 /-- The residue norm is nonarchimedean. -/
 theorem residueIsUltrametricDist (P : AffinoidPresentation K A) :
     letI := P.residueNormedCommRing
-    IsUltrametricDist A := sorry
+    IsUltrametricDist A :=
+  Rigid.residueIsUltrametricDist K A P.n P.ideal P.equiv
 
 /-- The metric topology of the residue norm is the quotient topology. -/
 theorem residueNormedCommRing_topology_eq (P : AffinoidPresentation K A) :
@@ -2267,6 +2276,8 @@ end AffinoidDomain
 /-- The points of an affinoid Berkovich space form its Berkovich spectrum. -/
 noncomputable def pointsOfAffinoidHomeomorph {A : Type v} [CommRing A] [Algebra K A]
     (hA : IsAffinoidAlgebra K A) :
+    letI : NormedCommRing A := hA.presentation.residueNormedCommRing K A
+    letI : NormedAlgebra K A := hA.presentation.residueNormedAlgebra K A
     Point K (ofAffinoid K hA) ≃ₜ
       (letI : NormedCommRing A := hA.presentation.residueNormedCommRing K A
        letI : NormedAlgebra K A := hA.presentation.residueNormedAlgebra K A
@@ -2320,6 +2331,8 @@ theorem continuous_spectrumComap {A : Type v} {B : Type w}
     (hA : IsAffinoidAlgebra K A) (hB : IsAffinoidAlgebra K B) (f : A →ₐ[K] B) :
     letI : NormedCommRing A := hA.presentation.residueNormedCommRing K A
     letI : NormedCommRing B := hB.presentation.residueNormedCommRing K B
+    letI : NormedAlgebra K A := hA.presentation.residueNormedAlgebra K A
+    letI : NormedAlgebra K B := hB.presentation.residueNormedAlgebra K B
     Continuous (spectrumComap K hA hB f) := sorry
 
 /-- The morphism of affinoid Berkovich spaces induced contravariantly by an algebra homomorphism. -/

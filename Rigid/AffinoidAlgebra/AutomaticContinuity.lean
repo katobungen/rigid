@@ -85,6 +85,10 @@ private theorem tateAlgebra_ideal_isClosed {n : ℕ}
       _ ≤ ‖S - R‖ := norm_coeff_le_norm K (Fin n) (S - R) (leadingDegree m S)
   exact (not_lt_of_ge (hSnorm ▸ hcoeff) hSR).elim
 
+theorem isClosed_tateAlgebra_ideal {n : ℕ}
+    (I : Ideal (TateAlgebra K (Fin n))) : IsClosed (I : Set (TateAlgebra K (Fin n))) :=
+  tateAlgebra_ideal_isClosed K I
+
 private noncomputable def pushForwardPresentation
     {A : Type v} [CommRing A] [Algebra K A]
     {B : Type w} [CommRing B] [Algebra K B]
@@ -350,6 +354,25 @@ theorem continuous_for_affinoidPresentationData
   let PB : AffinoidPresentation K B := { n := nB, ideal := IB, equiv := eB }
   change @Continuous A B PA.residueTopology PB.residueTopology f
   exact continuous_for_residueTopology K PA PB f
+
+/-- The quotient topology is independent of the chosen affinoid presentation data. -/
+theorem residueTopology_eq_for_affinoidPresentationData
+    {A : Type v} [CommRing A] [Algebra K A]
+    {nP nQ : ℕ} (IP : Ideal (TateAlgebra K (Fin nP)))
+    (eP : (TateAlgebra K (Fin nP) ⧸ IP) ≃ₐ[K] A)
+    (IQ : Ideal (TateAlgebra K (Fin nQ)))
+    (eQ : (TateAlgebra K (Fin nQ) ⧸ IQ) ≃ₐ[K] A) :
+    TopologicalSpace.coinduced
+        (eP.toAlgHom.comp (Ideal.Quotient.mkₐ K IP)) inferInstance =
+      TopologicalSpace.coinduced
+        (eQ.toAlgHom.comp (Ideal.Quotient.mkₐ K IQ)) inferInstance := by
+  apply le_antisymm
+  · have h := continuous_for_affinoidPresentationData K
+      IP eP IQ eQ (AlgHom.id K A)
+    rwa [continuous_iff_coinduced_le] at h
+  · have h := continuous_for_affinoidPresentationData K
+      IQ eQ IP eP (AlgHom.id K A)
+    rwa [continuous_iff_coinduced_le] at h
 
 end
 

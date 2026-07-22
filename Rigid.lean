@@ -7,6 +7,7 @@ import Rigid.AffinoidAlgebra.QuotientTopology
 import Rigid.AffinoidAlgebra.RationalDatum
 import Rigid.AffinoidAlgebra.RationalLocalization
 import Rigid.AffinoidAlgebra.RelativeTate
+import Rigid.AffinoidAlgebra.ResidueNorm
 import Rigid.Berkovich.AffinoidDomain
 import Rigid.Berkovich.CompletedResidue
 import Rigid.Berkovich.CompletedResidueFunctoriality

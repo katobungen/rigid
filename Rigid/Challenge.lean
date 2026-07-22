@@ -310,13 +310,19 @@ theorem residueContinuousSMul (P : AffinoidPresentation K A) :
 structure. Unlike the induced topology, this norm can depend on the presentation. -/
 @[reducible]
 noncomputable def residueNormedCommRing (P : AffinoidPresentation K A) :
-    NormedCommRing A := sorry
+    NormedCommRing A :=
+  { (inferInstance : CommRing A), (by sorry : NormedCommRing A) with
+    dist_eq := by sorry
+    norm_mul_le := by sorry }
 
 /-- The residue norm makes the target a normed algebra over the ground field. -/
 @[reducible]
 noncomputable def residueNormedAlgebra (P : AffinoidPresentation K A) :
     letI := P.residueNormedCommRing
-    NormedAlgebra K A := sorry
+    NormedAlgebra K A :=
+  letI : NormedCommRing A := P.residueNormedCommRing
+  { (inferInstance : Algebra K A) with
+    norm_smul_le := by sorry }
 
 /-- The scalar embedding of the residue normed algebra agrees with the presentation map applied to
 constant Tate series. -/
@@ -1831,6 +1837,8 @@ end AffinoidDomain
 /-- The points of an affinoid Berkovich space form its Berkovich spectrum. -/
 noncomputable def pointsOfAffinoidHomeomorph {A : Type v} [CommRing A] [Algebra K A]
     (hA : IsAffinoidAlgebra K A) :
+    letI : NormedCommRing A := hA.presentation.residueNormedCommRing K A
+    letI : NormedAlgebra K A := hA.presentation.residueNormedAlgebra K A
     Point K (ofAffinoid K hA) ≃ₜ
       (letI : NormedCommRing A := hA.presentation.residueNormedCommRing K A
        letI : NormedAlgebra K A := hA.presentation.residueNormedAlgebra K A
@@ -1884,6 +1892,8 @@ theorem continuous_spectrumComap {A : Type v} {B : Type w}
     (hA : IsAffinoidAlgebra K A) (hB : IsAffinoidAlgebra K B) (f : A →ₐ[K] B) :
     letI : NormedCommRing A := hA.presentation.residueNormedCommRing K A
     letI : NormedCommRing B := hB.presentation.residueNormedCommRing K B
+    letI : NormedAlgebra K A := hA.presentation.residueNormedAlgebra K A
+    letI : NormedAlgebra K B := hB.presentation.residueNormedAlgebra K B
     Continuous (spectrumComap K hA hB f) := sorry
 
 /-- The morphism of affinoid Berkovich spaces induced contravariantly by an algebra homomorphism. -/
