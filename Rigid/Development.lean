@@ -1,6 +1,7 @@
 import Mathlib
 import Rigid.AffinoidAlgebra.AutomaticContinuity
 import Rigid.AffinoidAlgebra.Basic
+import Rigid.AffinoidAlgebra.MaximalSpectrum
 import Rigid.Berkovich.Nonempty
 import Rigid.Berkovich.RelativeSpectrum
 import Rigid.Berkovich.RelativeNonempty
@@ -1760,11 +1761,18 @@ end AffinoidDomain
 noncomputable def pointsOfAffinoidEquiv {A : Type v} [CommRing A] [Algebra K A]
     (hA : IsAffinoidAlgebra K A) : Point K (ofAffinoid K hA) ≃ MaximalSpectrum A := sorry
 
+private theorem isAffinoidAlgebra_toRigid (A : Type v) [CommRing A] [Algebra K A]
+    (hA : IsAffinoidAlgebra K A) : Rigid.IsAffinoidAlgebra K A := by
+  rcases hA with ⟨P⟩
+  exact ⟨{ n := P.n, ideal := P.ideal, equiv := P.equiv }⟩
+
 /-- Pullback of maximal ideals along a morphism of affinoid algebras. -/
 noncomputable def maximalSpectrumComap {A : Type v} {B : Type w}
     [CommRing A] [Algebra K A] [CommRing B] [Algebra K B]
     (hA : IsAffinoidAlgebra K A) (hB : IsAffinoidAlgebra K B) (f : A →ₐ[K] B) :
-    MaximalSpectrum B → MaximalSpectrum A := sorry
+    MaximalSpectrum B → MaximalSpectrum A :=
+  Rigid.maximalSpectrumComap K (isAffinoidAlgebra_toRigid K A hA)
+    (isAffinoidAlgebra_toRigid K B hB) f
 
 /-- The underlying ideal of pullback on maximal spectra is ideal-theoretic comap. -/
 @[simp]
@@ -1772,12 +1780,15 @@ theorem maximalSpectrumComap_asIdeal {A : Type v} {B : Type w}
     [CommRing A] [Algebra K A] [CommRing B] [Algebra K B]
     (hA : IsAffinoidAlgebra K A) (hB : IsAffinoidAlgebra K B) (f : A →ₐ[K] B)
     (x : MaximalSpectrum B) :
-    (maximalSpectrumComap K hA hB f x).asIdeal = Ideal.comap f x.asIdeal := sorry
+    (maximalSpectrumComap K hA hB f x).asIdeal = Ideal.comap f x.asIdeal :=
+  Rigid.maximalSpectrumComap_asIdeal K (isAffinoidAlgebra_toRigid K A hA)
+    (isAffinoidAlgebra_toRigid K B hB) f x
 
 @[simp]
 theorem maximalSpectrumComap_id {A : Type v} [CommRing A] [Algebra K A]
     (hA : IsAffinoidAlgebra K A) :
-    maximalSpectrumComap K hA hA (AlgHom.id K A) = id := sorry
+    maximalSpectrumComap K hA hA (AlgHom.id K A) = id :=
+  Rigid.maximalSpectrumComap_id K (isAffinoidAlgebra_toRigid K A hA)
 
 @[simp]
 theorem maximalSpectrumComap_comp {A : Type v} {B : Type w} {C : Type z}
@@ -1785,7 +1796,9 @@ theorem maximalSpectrumComap_comp {A : Type v} {B : Type w} {C : Type z}
     (hA : IsAffinoidAlgebra K A) (hB : IsAffinoidAlgebra K B)
     (hC : IsAffinoidAlgebra K C) (f : A →ₐ[K] B) (g : B →ₐ[K] C) :
     maximalSpectrumComap K hA hC (g.comp f) =
-      maximalSpectrumComap K hA hB f ∘ maximalSpectrumComap K hB hC g := sorry
+      maximalSpectrumComap K hA hB f ∘ maximalSpectrumComap K hB hC g :=
+  Rigid.maximalSpectrumComap_comp K (isAffinoidAlgebra_toRigid K A hA)
+    (isAffinoidAlgebra_toRigid K B hB) (isAffinoidAlgebra_toRigid K C hC) f g
 
 /-- The morphism of affinoid rigid spaces induced contravariantly by an algebra homomorphism. -/
 noncomputable def ofAffinoidMap {A : Type v} {B : Type w}
