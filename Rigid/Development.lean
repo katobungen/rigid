@@ -2276,6 +2276,8 @@ end AffinoidDomain
 /-- The points of an affinoid Berkovich space form its Berkovich spectrum. -/
 noncomputable def pointsOfAffinoidHomeomorph {A : Type v} [CommRing A] [Algebra K A]
     (hA : IsAffinoidAlgebra K A) :
+    letI : NormedCommRing A := hA.presentation.residueNormedCommRing K A
+    letI : NormedAlgebra K A := hA.presentation.residueNormedAlgebra K A
     Point K (ofAffinoid K hA) ≃ₜ
       (letI : NormedCommRing A := hA.presentation.residueNormedCommRing K A
        letI : NormedAlgebra K A := hA.presentation.residueNormedAlgebra K A
