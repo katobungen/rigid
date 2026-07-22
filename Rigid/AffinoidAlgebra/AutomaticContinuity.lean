@@ -239,7 +239,7 @@ private theorem finite_residueField_of_maximal_isAffinoidAlgebra
     ((Ideal.Quotient.maximal_ideal_iff_isField_quotient m).mp hm)
 
 /-- Powers of maximal ideals have finite-dimensional quotient. -/
-private theorem finite_quotient_maximal_pow_of_isAffinoidAlgebra
+theorem finite_quotient_maximal_pow_of_isAffinoidAlgebra
     {B : Type w} [CommRing B] [Algebra K B] (hB : IsAffinoidAlgebra K B)
     (m : Ideal B) (hm : m.IsMaximal) (l : ℕ) (hl : 1 ≤ l) :
     Module.Finite K (B ⧸ m ^ l) := by
@@ -260,7 +260,7 @@ private theorem finite_quotient_maximal_pow_of_isAffinoidAlgebra
   rw [Ideal.Quotient.factor_ker hpow, ← Ideal.map_pow, Ideal.map_quotient_self]
 
 /-- The Krull-intersection consequence used in Proposition 1.4.11. -/
-private theorem eq_zero_of_mem_all_maximal_powers_of_isAffinoidAlgebra
+theorem eq_zero_of_mem_all_maximal_powers_of_isAffinoidAlgebra
     {B : Type w} [CommRing B] [Algebra K B] (hB : IsAffinoidAlgebra K B) (b : B)
     (hb : ∀ (m : Ideal B), m.IsMaximal → ∀ l : ℕ, 1 ≤ l → b ∈ m ^ l) : b = 0 := by
   letI : IsNoetherianRing B := isNoetherianRing_of_isAffinoidAlgebra K hB

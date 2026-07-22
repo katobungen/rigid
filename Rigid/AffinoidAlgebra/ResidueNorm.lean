@@ -171,4 +171,25 @@ theorem isQuotientNorm_toAlgHom (P : AffinoidPresentation K A) :
 
 end AffinoidPresentation
 
+/-- The transported residue norm induces the quotient topology of the presentation. -/
+theorem residueNormedCommRing_topology_eq (n : ℕ)
+    (I : Ideal (TateAlgebra K (Fin n)))
+    (e : (TateAlgebra K (Fin n) ⧸ I) ≃ₐ[K] A) :
+    letI := residueNormedCommRing K A n I e
+    (inferInstance : TopologicalSpace A) =
+      TopologicalSpace.coinduced
+        (e.toAlgHom.comp (Ideal.Quotient.mkₐ K I)) inferInstance :=
+  AffinoidPresentation.residueNormedCommRing_topology_eq K A
+    { n := n, ideal := I, equiv := e }
+
+/-- The presentation map has the exact quotient norm for the transported residue norm. -/
+theorem isQuotientNorm_toAlgHom (n : ℕ)
+    (I : Ideal (TateAlgebra K (Fin n)))
+    (e : (TateAlgebra K (Fin n) ⧸ I) ≃ₐ[K] A) :
+    letI := residueNormedCommRing K A n I e
+    IsQuotientNorm
+      (e.toAlgHom.comp (Ideal.Quotient.mkₐ K I) : TateAlgebra K (Fin n) → A) :=
+  AffinoidPresentation.isQuotientNorm_toAlgHom K A
+    { n := n, ideal := I, equiv := e }
+
 end Rigid
