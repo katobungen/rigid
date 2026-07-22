@@ -750,6 +750,41 @@ theorem norm_completedResidueAlgHom (x : BerkovichSpectrumOver K A) (a : A) :
 theorem ker_completedResidueMap (x : BerkovichSpectrumOver K A) :
     RingHom.ker (completedResidueMap K A x) = x.kernel := sorry
 
+/-- The rational locus cut out by `|fᵢ(x)| ≤ |g(x)|`. -/
+def rationalDomainSet {n : ℕ} (g : A) (f : Fin n → A) : Set (BerkovichSpectrumOver K A) :=
+  {x | ∀ i, x (f i) ≤ x g}
+
+/-- A rational domain as a topological subspace of the relative spectrum. -/
+abbrev RationalDomain {n : ℕ} (g : A) (f : Fin n → A) :=
+  ↥(rationalDomainSet K A g f)
+
+namespace RationalDomain
+
+/-- The inclusion of a rational domain into its ambient relative spectrum. -/
+def inclusion {n : ℕ} (g : A) (f : Fin n → A) :
+    RationalDomain K A g f → BerkovichSpectrumOver K A := Subtype.val
+
+/-- Rational loci are closed in the relative Berkovich spectrum. -/
+theorem isClosed_rationalDomainSet {n : ℕ} (g : A) (f : Fin n → A) :
+    IsClosed (rationalDomainSet K A g f) := sorry
+
+noncomputable instance rationalDomainCompactSpace {n : ℕ} (g : A) (f : Fin n → A) :
+    CompactSpace (RationalDomain K A g f) := sorry
+
+/-- Rational domains are compact. -/
+theorem isCompact_univ {n : ℕ} (g : A) (f : Fin n → A) :
+    IsCompact (Set.univ : Set (RationalDomain K A g f)) := sorry
+
+/-- Evaluation at an ambient algebra element is continuous on a rational domain. -/
+theorem continuous_eval {n : ℕ} (g : A) (f : Fin n → A) (a : A) :
+    Continuous fun x : RationalDomain K A g f ↦ (x.1 : A → ℝ) a := sorry
+
+/-- The denominator of a rational datum does not vanish on its rational domain. -/
+theorem denominator_ne_zero {n : ℕ} {g : A} {f : Fin n → A}
+    (hgf : IsRationalDatum g f) (x : RationalDomain K A g f) : x.1 g ≠ 0 := sorry
+
+end RationalDomain
+
 end BerkovichSpectrumOver
 
 /-- The Berkovich spectrum of a nonzero nonarchimedean commutative normed ring is nonempty. -/

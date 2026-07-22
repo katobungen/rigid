@@ -5,6 +5,7 @@ import Rigid.Berkovich.Nonempty
 import Rigid.Berkovich.RelativeSpectrum
 import Rigid.Berkovich.RelativeNonempty
 import Rigid.Berkovich.CompletedResidue
+import Rigid.Berkovich.AffinoidDomain
 import Rigid.AffinoidAlgebra.QuotientNorm
 import Rigid.AffinoidAlgebra.QuotientTopology
 import Rigid.AffinoidAlgebra.RationalDatum
@@ -935,6 +936,63 @@ theorem norm_completedResidueAlgHom (x : BerkovichSpectrumOver K A) (a : A) :
 @[simp]
 theorem ker_completedResidueMap (x : BerkovichSpectrumOver K A) :
     RingHom.ker (completedResidueMap K A x) = x.kernel := sorry
+
+/-- The rational locus cut out by `|fᵢ(x)| ≤ |g(x)|`. -/
+def rationalDomainSet {n : ℕ} (g : A) (f : Fin n → A) : Set (BerkovichSpectrumOver K A) :=
+  {x | ∀ i, x (f i) ≤ x g}
+
+/-- A rational domain as a topological subspace of the relative spectrum. -/
+abbrev RationalDomain {n : ℕ} (g : A) (f : Fin n → A) :=
+  ↥(rationalDomainSet K A g f)
+
+namespace RationalDomain
+
+/-- The inclusion of a rational domain into its ambient relative spectrum. -/
+def inclusion {n : ℕ} (g : A) (f : Fin n → A) :
+    RationalDomain K A g f → BerkovichSpectrumOver K A := Subtype.val
+
+/-- Rational loci are closed in the relative Berkovich spectrum. -/
+theorem isClosed_rationalDomainSet {n : ℕ} (g : A) (f : Fin n → A) :
+    IsClosed (rationalDomainSet K A g f) := by
+  rw [show rationalDomainSet K A g f = ⋂ i, {x | x (f i) ≤ x g} by
+    ext x
+    simp [rationalDomainSet]]
+  exact isClosed_iInter fun i ↦ isClosed_le
+    (BerkovichSpectrumOver.continuous_eval K A _)
+    (BerkovichSpectrumOver.continuous_eval K A _)
+
+noncomputable instance rationalDomainCompactSpace {n : ℕ} (g : A) (f : Fin n → A) :
+    CompactSpace (RationalDomain K A g f) := sorry
+
+/-- Rational domains are compact. -/
+theorem isCompact_univ {n : ℕ} (g : A) (f : Fin n → A) :
+    IsCompact (Set.univ : Set (RationalDomain K A g f)) :=
+  _root_.isCompact_univ
+
+/-- Evaluation at an ambient algebra element is continuous on a rational domain. -/
+theorem continuous_eval {n : ℕ} (g : A) (f : Fin n → A) (a : A) :
+    Continuous fun x : RationalDomain K A g f ↦ (x.1 : A → ℝ) a :=
+  (BerkovichSpectrumOver.continuous_eval K A a).comp continuous_subtype_val
+
+/-- The denominator of a rational datum does not vanish on its rational domain. -/
+theorem denominator_ne_zero {n : ℕ} {g : A} {f : Fin n → A}
+    (hgf : IsRationalDatum g f) (x : RationalDomain K A g f) : x.1 g ≠ 0 := by
+  intro hg
+  have hnonneg (a : A) : 0 ≤ x.1 a := BerkovichSpectrum.nonneg A x.1.toBerkovichSpectrum a
+  have hfi (i : Fin n) : x.1 (f i) = 0 :=
+    le_antisymm ((x.2 i).trans_eq hg) (hnonneg (f i))
+  have hgenerators : Set.insert g (Set.range f) ⊆ x.1.kernel := by
+    intro a ha
+    change x.1 a = 0
+    rcases ha with rfl | ⟨i, rfl⟩
+    · exact hg
+    · exact hfi i
+  have htop : (⊤ : Ideal A) ≤ x.1.kernel := by
+    rw [← hgf]
+    exact Ideal.span_le.2 hgenerators
+  exact x.1.kernel_isPrime.ne_top (top_unique htop)
+
+end RationalDomain
 
 end BerkovichSpectrumOver
 

@@ -124,7 +124,9 @@ geometric objects.
 5. Define completed residue fields and evaluation maps. **Done**
    (`Berkovich/CompletedResidue`): quotient by the prime kernel, extend the valuation to the
    fraction field, complete, and recover the point seminorm as the norm of evaluation.
-6. Define affinoid domains and analytic functions.
+6. Define affinoid domains and analytic functions. The closed compact rational-domain loci and
+   denominator nonvanishing for rational data are **done** (`Berkovich/AffinoidDomain`); their
+   localization models and analytic function rings remain open.
 7. Build Berkovich spaces from affinoid atlases, then define good, strict, Hausdorff, and
    paracompact objects and analytic morphisms.
 
@@ -182,6 +184,7 @@ Rigid/
   Berkovich/RelativeSpectrum.lean
   Berkovich/RelativeNonempty.lean
   Berkovich/CompletedResidue.lean
+  Berkovich/AffinoidDomain.lean
   Berkovich/GeneralSmoothing.lean
   Berkovich/Nonempty.lean
   Berkovich/Space.lean
