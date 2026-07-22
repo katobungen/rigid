@@ -2371,19 +2371,29 @@ abbrev ComparisonBerkovichSpace := (berkovichComparisonProperty K).FullSubcatego
 
 /-- Quasi-separatedness is invariant under analytic isomorphism. -/
 theorem quasiSeparatedRigidProperty_isClosedUnderIsomorphisms :
-    (quasiSeparatedRigidProperty K).IsClosedUnderIsomorphisms := sorry
+    (quasiSeparatedRigidProperty K).IsClosedUnderIsomorphisms where
+  of_iso e hX := (RigidSpace.isQuasiSeparated_iff_of_iso K e).mp hX
 
 /-- The Hausdorff strict property is invariant under analytic isomorphism. -/
 theorem hausdorffStrictBerkovichProperty_isClosedUnderIsomorphisms :
-    (hausdorffStrictBerkovichProperty K).IsClosedUnderIsomorphisms := sorry
+    (hausdorffStrictBerkovichProperty K).IsClosedUnderIsomorphisms where
+  of_iso e hX :=
+    ⟨(BerkovichSpace.isHausdorff_iff_of_iso K e).mp hX.1,
+      (BerkovichSpace.isStrict_iff_of_iso K e).mp hX.2⟩
 
 /-- The rigid comparison property is invariant under analytic isomorphism. -/
 theorem rigidComparisonProperty_isClosedUnderIsomorphisms :
-    (rigidComparisonProperty K).IsClosedUnderIsomorphisms := sorry
+    (rigidComparisonProperty K).IsClosedUnderIsomorphisms where
+  of_iso e hX :=
+    ⟨(RigidSpace.isQuasiSeparated_iff_of_iso K e).mp hX.1,
+      (RigidSpace.hasAffinoidCoverOfFiniteType_iff_of_iso K e).mp hX.2⟩
 
 /-- The Berkovich comparison property is invariant under analytic isomorphism. -/
 theorem berkovichComparisonProperty_isClosedUnderIsomorphisms :
-    (berkovichComparisonProperty K).IsClosedUnderIsomorphisms := sorry
+    (berkovichComparisonProperty K).IsClosedUnderIsomorphisms where
+  of_iso e hX :=
+    ⟨(BerkovichSpace.isStrict_iff_of_iso K e).mp hX.1,
+      (BerkovichSpace.isParacompact_iff_of_iso K e).mp hX.2⟩
 
 /-- An affinoid algebra gives an object of the rigid comparison subcategory. -/
 noncomputable def comparisonRigidSpaceOfAffinoid {A : Type v} [CommRing A] [Algebra K A]
@@ -2459,21 +2469,27 @@ noncomputable def berkovichToRigid_fullyFaithful : (berkovichToRigid K).FullyFai
 
 /-- Inclusion of the paracompact rigid comparison range into quasi-separated rigid spaces. -/
 noncomputable def comparisonRigidToQuasiSeparated :
-    ComparisonRigidSpace K ⥤ QuasiSeparatedRigidSpace K := sorry
+    ComparisonRigidSpace K ⥤ QuasiSeparatedRigidSpace K :=
+  ObjectProperty.ιOfLE (fun _ hX => hX.1)
 
 /-- The rigid comparison inclusion has the expected underlying rigid space. -/
 noncomputable def comparisonRigidToQuasiSeparatedCompιIso :
     comparisonRigidToQuasiSeparated K ⋙ (quasiSeparatedRigidProperty K).ι ≅
-      (rigidComparisonProperty K).ι := sorry
+      (rigidComparisonProperty K).ι :=
+  ObjectProperty.ιOfLECompιIso (fun _ hX => hX.1)
 
 /-- Inclusion of paracompact strict Berkovich spaces into Hausdorff strict Berkovich spaces. -/
 noncomputable def comparisonBerkovichToHausdorffStrict :
-    ComparisonBerkovichSpace K ⥤ HausdorffStrictBerkovichSpace K := sorry
+    ComparisonBerkovichSpace K ⥤ HausdorffStrictBerkovichSpace K :=
+  ObjectProperty.ιOfLE fun _ hX =>
+    ⟨BerkovichSpace.isHausdorff_of_isParacompact K hX.2, hX.1⟩
 
 /-- The Berkovich comparison inclusion has the expected underlying Berkovich space. -/
 noncomputable def comparisonBerkovichToHausdorffStrictCompιIso :
     comparisonBerkovichToHausdorffStrict K ⋙ (hausdorffStrictBerkovichProperty K).ι ≅
-      (berkovichComparisonProperty K).ι := sorry
+      (berkovichComparisonProperty K).ι :=
+  ObjectProperty.ιOfLECompιIso fun _ hX =>
+    ⟨BerkovichSpace.isHausdorff_of_isParacompact K hX.2, hX.1⟩
 
 /-- The restriction of the canonical functor to the paracompact comparison subcategories. -/
 noncomputable def comparisonBerkovichToRigid :
