@@ -1,5 +1,6 @@
 import Rigid.TateAlgebra.GaussNorm
 import Mathlib.Analysis.Normed.Module.Basic
+import Mathlib.Algebra.MvPolynomial.Eval
 
 set_option linter.style.header false
 
@@ -19,7 +20,7 @@ universe u v
 
 namespace Rigid
 
-variable (K : Type u) [NontriviallyNormedField K] [IsUltrametricDist K]
+variable (K : Type u) [NormedCommRing K] [IsUltrametricDist K]
 variable (ι : Type v)
 
 /-- The Gauss norm bundled as an `AddGroupNorm`. -/
@@ -40,16 +41,18 @@ noncomputable instance tateAlgebraNormedCommRing : NormedCommRing (TateAlgebra K
   { (inferInstance : CommRing (TateAlgebra K ι)), tateAlgebraNormedAddCommGroup K ι with
     norm_mul_le := fun f g ↦ by exact gaussNorm_mul_le K ι f g }
 
-instance tateAlgebraNormOneClass : NormOneClass (TateAlgebra K ι) :=
+instance tateAlgebraNormOneClass [NormOneClass K] : NormOneClass (TateAlgebra K ι) :=
   ⟨by exact gaussNorm_one K ι⟩
-
-noncomputable instance tateAlgebraNormedAlgebra : NormedAlgebra K (TateAlgebra K ι) where
-  __ := tateAlgebraAlgebra K ι
-  norm_smul_le c f := by exact le_of_eq (gaussNorm_smul K ι c f)
 
 instance tateAlgebraIsUltrametricDist : IsUltrametricDist (TateAlgebra K ι) :=
   IsUltrametricDist.isUltrametricDist_of_forall_norm_add_le_max_norm
     fun f g ↦ by exact gaussNorm_add_le_max K ι f g
+
+noncomputable instance tateAlgebraNormedAlgebra
+    (K : Type u) [NontriviallyNormedField K] [IsUltrametricDist K] (ι : Type v) :
+    NormedAlgebra K (TateAlgebra K ι) where
+  __ := tateAlgebraAlgebra K ι
+  norm_smul_le c f := by exact le_of_eq (gaussNorm_smul K ι c f)
 
 theorem norm_def (f : TateAlgebra K ι) : ‖f‖ = gaussNorm K ι f := rfl
 
@@ -67,8 +70,23 @@ theorem norm_C (a : K) : ‖TateAlgebra.C K ι a‖ = ‖a‖ :=
   gaussNorm_C K ι a
 
 @[simp]
-theorem norm_tateVariable (i : ι) : ‖tateVariable K ι i‖ = 1 :=
+theorem norm_tateVariable [NormOneClass K] (i : ι) : ‖tateVariable K ι i‖ = 1 :=
   gaussNorm_tateVariable K ι i
+
+/-- All nonnegative powers of a Tate variable have norm bounded by the norm of `1`. -/
+theorem norm_tateVariable_pow_le (i : ι) (m : ℕ) :
+    ‖tateVariable K ι i ^ m‖ ≤ ‖(1 : K)‖ := by
+  classical
+  rw [norm_eq_sSup_coeff]
+  refine csSup_le (Set.range_nonempty _) ?_
+  rintro _ ⟨n, rfl⟩
+  change ‖MvPowerSeries.coeff n
+      ((tateVariable K ι i ^ m : TateAlgebra K ι) : MvPowerSeries ι K)‖ ≤ ‖(1 : K)‖
+  rw [show ((tateVariable K ι i ^ m : TateAlgebra K ι) : MvPowerSeries ι K) =
+      MvPowerSeries.X i ^ m from rfl, MvPowerSeries.coeff_X_pow]
+  split_ifs
+  · exact le_rfl
+  · exact norm_zero.trans_le (norm_nonneg 1)
 
 /-! ## Polynomials inside the Tate algebra -/
 
@@ -95,9 +113,34 @@ theorem coe_ofPolynomial (p : MvPolynomial ι K) :
     ((TateAlgebra.ofPolynomial K ι p : TateAlgebra K ι) : MvPowerSeries ι K) = ↑p := rfl
 
 @[simp]
+theorem ofPolynomial_C (a : K) :
+    TateAlgebra.ofPolynomial K ι (MvPolynomial.C a) = TateAlgebra.C K ι a :=
+  Subtype.ext (MvPolynomial.coe_C a)
+
+@[simp]
 theorem ofPolynomial_X (i : ι) :
     TateAlgebra.ofPolynomial K ι (MvPolynomial.X i) = tateVariable K ι i :=
   Subtype.ext (MvPolynomial.coe_X i)
+
+/-- The polynomial inclusion is evaluation at the Tate variables with the constant-series map on
+coefficients. -/
+theorem ofPolynomial_eq_eval₂ (p : MvPolynomial ι K) :
+    TateAlgebra.ofPolynomial K ι p =
+      MvPolynomial.eval₂ (TateAlgebra.C K ι) (tateVariable K ι) p := by
+  let Φ : MvPolynomial ι K →+* TateAlgebra K ι :=
+    (TateAlgebra.ofPolynomial K ι).toRingHom
+  let Ψ : MvPolynomial ι K →+* TateAlgebra K ι :=
+    MvPolynomial.eval₂Hom (TateAlgebra.C K ι) (tateVariable K ι)
+  have h : Φ = Ψ := MvPolynomial.ringHom_ext
+    (fun a ↦ by
+      change TateAlgebra.ofPolynomial K ι (MvPolynomial.C a) =
+        MvPolynomial.eval₂ (TateAlgebra.C K ι) (tateVariable K ι) (MvPolynomial.C a)
+      rw [ofPolynomial_C, MvPolynomial.eval₂_C])
+    (fun i ↦ by
+      change TateAlgebra.ofPolynomial K ι (MvPolynomial.X i) =
+        MvPolynomial.eval₂ (TateAlgebra.C K ι) (tateVariable K ι) (MvPolynomial.X i)
+      rw [ofPolynomial_X, MvPolynomial.eval₂_X])
+  exact RingHom.congr_fun h p
 
 /-- Polynomials are dense in the Tate algebra: any Tate series is approximated by the partial
 sums over the finitely many coefficients that are not yet small. -/

@@ -21,7 +21,7 @@ universe u v
 
 namespace Rigid
 
-variable (K : Type u) [NontriviallyNormedField K] [IsUltrametricDist K]
+variable (K : Type u) [NormedCommRing K] [IsUltrametricDist K]
 variable (ι : Type v)
 
 /-- The Gauss norm of a strict Tate series, defined as the supremum of its coefficient norms. -/
@@ -76,11 +76,12 @@ theorem gaussNorm_C (a : K) : gaussNorm K ι (TateAlgebra.C K ι a) = ‖a‖ :=
   · simpa using norm_coeff_le_gaussNorm K ι (TateAlgebra.C K ι a) 0
 
 @[simp]
-theorem gaussNorm_one : gaussNorm K ι (1 : TateAlgebra K ι) = 1 := by
+theorem gaussNorm_one [NormOneClass K] : gaussNorm K ι (1 : TateAlgebra K ι) = 1 := by
   simpa using gaussNorm_C K ι 1
 
 @[simp]
-theorem gaussNorm_tateVariable (i : ι) : gaussNorm K ι (tateVariable K ι i) = 1 := by
+theorem gaussNorm_tateVariable [NormOneClass K] (i : ι) :
+    gaussNorm K ι (tateVariable K ι i) = 1 := by
   classical
   apply le_antisymm
   · refine csSup_le (Set.range_nonempty _) ?_
@@ -144,8 +145,22 @@ theorem gaussNorm_mul_le (f g : TateAlgebra K ι) :
     (mul_le_mul (norm_coeff_le_gaussNorm K ι f p.1) (norm_coeff_le_gaussNorm K ι g p.2)
       (norm_nonneg _) (gaussNorm_nonneg K ι f))
 
-/-- The Gauss norm is homogeneous with respect to scalars. -/
-theorem gaussNorm_smul (c : K) (f : TateAlgebra K ι) :
+/-- Multiplication by a coefficient is bounded for the Gauss norm. -/
+theorem gaussNorm_smul_le (c : K) (f : TateAlgebra K ι) :
+    gaussNorm K ι (c • f) ≤ ‖c‖ * gaussNorm K ι f := by
+  refine csSup_le (Set.range_nonempty _) ?_
+  rintro _ ⟨n, rfl⟩
+  dsimp only
+  have hcoe : ((c • f : TateAlgebra K ι) : MvPowerSeries ι K)
+      = MvPowerSeries.C c * (f : MvPowerSeries ι K) := by
+    rw [Algebra.smul_def, algebraMap_apply]
+    rfl
+  rw [hcoe, MvPowerSeries.coeff_C_mul]
+  exact (norm_mul_le _ _).trans
+    (mul_le_mul_of_nonneg_left (norm_coeff_le_gaussNorm K ι f n) (norm_nonneg c))
+
+/-- The Gauss norm is homogeneous when the coefficient norm is multiplicative. -/
+theorem gaussNorm_smul [NormMulClass K] (c : K) (f : TateAlgebra K ι) :
     gaussNorm K ι (c • f) = ‖c‖ * gaussNorm K ι f := by
   have h : (fun n : ι →₀ ℕ ↦
         ‖MvPowerSeries.coeff n ((c • f : TateAlgebra K ι) : MvPowerSeries ι K)‖)
