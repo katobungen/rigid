@@ -4,6 +4,8 @@ import Rigid.AffinoidAlgebra.NoetherNormalization
 import Rigid.AffinoidAlgebra.QuotientNorm
 import Rigid.AffinoidAlgebra.QuotientTopology
 import Rigid.AffinoidAlgebra.RationalDatum
+import Rigid.AffinoidAlgebra.RationalLocalization
+import Rigid.AffinoidAlgebra.RelativeTate
 import Rigid.Berkovich.Spectrum
 import Rigid.Berkovich.CompletedResidue
 import Rigid.Berkovich.AffinoidDomain
@@ -21,4 +23,5 @@ import Rigid.TateAlgebra.Multiplicative
 import Rigid.TateAlgebra.Noetherian
 import Rigid.TateAlgebra.NormedRing
 import Rigid.TateAlgebra.PowerBoundedUniversalProperty
+import Rigid.TateAlgebra.RelativeUniversalProperty
 import Rigid.TateAlgebra.UniversalProperty

@@ -21,7 +21,7 @@ universe u v
 
 namespace Rigid
 
-variable (K : Type u) [NontriviallyNormedField K] [IsUltrametricDist K]
+variable (K : Type u) [NormedCommRing K] [IsUltrametricDist K]
 variable (ι : Type v)
 
 /-- Extracting a coefficient is a `1`-Lipschitz map on the Tate algebra. -/
