@@ -4,6 +4,7 @@ import Rigid.AffinoidAlgebra.Basic
 import Rigid.AffinoidAlgebra.MaximalSpectrum
 import Rigid.AffinoidAlgebra.NoetherNormalization
 import Rigid.AffinoidAlgebra.NoetherianBanach
+import Rigid.AffinoidAlgebra.PowerBounded
 import Rigid.AffinoidAlgebra.QuotientNorm
 import Rigid.AffinoidAlgebra.QuotientTopology
 import Rigid.AffinoidAlgebra.RationalDatum
@@ -14,11 +15,13 @@ import Rigid.AffinoidSpectrum.RationalBasis
 import Rigid.Berkovich.AffinoidDomain
 import Rigid.Berkovich.CompletedResidue
 import Rigid.Berkovich.CompletedResidueFunctoriality
+import Rigid.Berkovich.GaussPoint
 import Rigid.Berkovich.GeneralSmoothing
 import Rigid.Berkovich.Nonempty
 import Rigid.Berkovich.RationalLocalization
 import Rigid.Berkovich.RelativeNonempty
 import Rigid.Berkovich.RelativeSpectrum
+import Rigid.Berkovich.SpectralSeminorm
 import Rigid.Berkovich.Spectrum
 import Rigid.Development
 import Rigid.TateAlgebra.Basic
