@@ -1,0 +1,49 @@
+# Adapted from mathlib's labels-from-comments workflow. Any GitHub user may claim or release an
+# issue by posting a comment containing a line whose entire content is `claimed` or `-claimed`.
+name: Claim issue based on comment
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  update-claimed-label:
+    # Pull-request comments also emit issue_comment events; this workflow is only for issues.
+    if: ${{ github.event.issue.pull_request == null }}
+    runs-on: ubuntu-latest
+    env:
+      COMMENT: ${{ github.event.comment.body }}
+
+    steps:
+      - name: Add or remove claimed label
+        run: |
+          # Strip carriage returns, trim whitespace on each line, and use the last matching
+          # directive. Requiring a complete line prevents ordinary prose from triggering this.
+          comment="${COMMENT//$'\r'/}"
+          comment="$(printf '%s' "${comment}" | awk '{$1=$1};1')"
+          directive="$(printf '%s' "${comment}" | grep '^[-]\?claimed$' | tail -1 || true)"
+
+          if [ -z "${directive}" ]; then
+            exit 0
+          fi
+
+          if [ "${directive}" = "-claimed" ]; then
+            # curl does not fail on an HTTP 404, so releasing an already-unclaimed issue is safe.
+            curl --request DELETE \
+              --url "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/labels/claimed" \
+              --header 'Accept: application/vnd.github+json' \
+              --header 'X-GitHub-Api-Version: 2022-11-28' \
+              --header 'Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}'
+          else
+            curl --request POST \
+              --url "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/labels" \
+              --header 'Accept: application/vnd.github+json' \
+              --header 'Content-Type: application/json' \
+              --header 'X-GitHub-Api-Version: 2022-11-28' \
+              --header 'Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}' \
+              --data '{"labels":["claimed"]}'
+          fi
