@@ -27,6 +27,12 @@ import Rigid.Berkovich.RelativeSpectrum
 import Rigid.Berkovich.SpectralSeminorm
 import Rigid.Berkovich.Spectrum
 import Rigid.Development
+import Rigid.RigidSpace.AdmissibleSite
+import Rigid.RigidSpace.Basic
+import Rigid.RigidSpace.CanonicalTopology
+import Rigid.RigidSpace.Comparator
+import Rigid.RigidSpace.GRingedSpace
+import Rigid.RigidSpace.Morphism
 import Rigid.TateAlgebra.Basic
 import Rigid.TateAlgebra.Complete
 import Rigid.TateAlgebra.Division
