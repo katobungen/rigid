@@ -1560,7 +1560,7 @@ end RigidSpace
 algebras. -/
 def BerkovichSpace
     (K : Type u) [NontriviallyNormedField K] [CompleteSpace K] [IsUltrametricDist K] :
-    Type (u + 1) := sorry
+    Type (u + 2) := sorry
 
 noncomputable instance berkovichSpaceCategory : Category.{u + 1} (BerkovichSpace K) :=
   sorry
@@ -1620,7 +1620,7 @@ namespace StructureSheaf
 
 /-- Analytic functions on an open subset of a Berkovich space. -/
 noncomputable def Sections {X : BerkovichSpace K}
-    (U : TopologicalSpace.Opens (Point K X)) : Type u := sorry
+    (U : TopologicalSpace.Opens (Point K X)) : Type (u + 1) := sorry
 
 noncomputable instance sectionsCommRing {X : BerkovichSpace K}
     (U : TopologicalSpace.Opens (Point K X)) : CommRing (Sections K U) := sorry
@@ -1658,7 +1658,7 @@ theorem existsUnique_glue {X : BerkovichSpace K} {ι : Type (u + 1)}
     ∃! t : Sections K V, ∀ i, restriction K (hsub i) t = s i := sorry
 
 /-- The local ring of germs at a Berkovich point. -/
-noncomputable def Stalk (X : BerkovichSpace K) (x : Point K X) : Type u := sorry
+noncomputable def Stalk (X : BerkovichSpace K) (x : Point K X) : Type (u + 1) := sorry
 
 noncomputable instance stalkCommRing (X : BerkovichSpace K) (x : Point K X) :
     CommRing (Stalk K X x) := sorry
