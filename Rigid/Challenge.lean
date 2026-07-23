@@ -1079,7 +1079,7 @@ variable (K : Type u) [NontriviallyNormedField K] [CompleteSpace K] [IsUltrametr
 Grothendieck topology. -/
 def RigidSpace
     (K : Type u) [NontriviallyNormedField K] [CompleteSpace K] [IsUltrametricDist K] :
-    Type (u + 1) := CategoryTheory.Bundled (fun _ : Type u => PUnit.{1})
+    Type (u + 1) := sorry
 
 noncomputable instance rigidSpaceCategory : Category.{u + 1} (RigidSpace K) := sorry
 
@@ -1089,8 +1089,7 @@ noncomputable instance rigidSpaceHasBinaryProducts :
 namespace RigidSpace
 
 /-- The type of analytic points of a rigid space. -/
-def Point (X : RigidSpace K) : Type (u + 1) :=
-  ULift.{u + 1, u} X.α
+def Point (X : RigidSpace K) : Type (u + 1) := sorry
 
 namespace Point
 

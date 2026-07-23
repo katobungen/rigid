@@ -10,7 +10,6 @@ import Rigid.Berkovich.CompletedResidue
 import Rigid.Berkovich.RationalLocalization
 import Rigid.Berkovich.AffinoidDomain
 import Rigid.AffinoidSpectrum.RationalBasis
-import Rigid.RigidSpace.Basic
 import Rigid.AffinoidAlgebra.QuotientNorm
 import Rigid.AffinoidAlgebra.QuotientTopology
 import Rigid.AffinoidAlgebra.RationalDatum
@@ -1494,7 +1493,7 @@ variable (K : Type u) [NontriviallyNormedField K] [CompleteSpace K] [IsUltrametr
 Grothendieck topology. -/
 def RigidSpace
     (K : Type u) [NontriviallyNormedField K] [CompleteSpace K] [IsUltrametricDist K] :
-    Type (u + 1) := Rigid.RigidSpace.{u}
+    Type (u + 1) := sorry
 
 noncomputable instance rigidSpaceCategory : Category.{u + 1} (RigidSpace K) := sorry
 
@@ -1504,8 +1503,7 @@ noncomputable instance rigidSpaceHasBinaryProducts :
 namespace RigidSpace
 
 /-- The type of analytic points of a rigid space. -/
-def Point (X : RigidSpace K) : Type (u + 1) :=
-  ULift.{u + 1, u} (@Rigid.RigidSpace.Point.{u} X)
+def Point (X : RigidSpace K) : Type (u + 1) := sorry
 
 namespace Point
 
@@ -1917,8 +1915,7 @@ private theorem isAffinoidAlgebra_toRigid (A : Type v) [CommRing A] [Algebra K A
 
 /-- The rigid space associated to a strict affinoid algebra. -/
 noncomputable def ofAffinoid {A : Type v} [CommRing A] [Algebra K A]
-    (hA : IsAffinoidAlgebra K A) : RigidSpace K :=
-  Rigid.RigidSpace.ofAffinoid K (isAffinoidAlgebra_toRigid K A hA)
+    (hA : IsAffinoidAlgebra K A) : RigidSpace K := sorry
 
 /-- Global analytic functions on an affinoid rigid space recover its coordinate algebra. -/
 noncomputable def globalSectionsOfAffinoidEquiv {A : Type u} [CommRing A] [Algebra K A]
@@ -1940,9 +1937,7 @@ end AffinoidDomain
 
 /-- The points of an affinoid rigid space are the maximal ideals of its coordinate algebra. -/
 noncomputable def pointsOfAffinoidEquiv {A : Type v} [CommRing A] [Algebra K A]
-    (hA : IsAffinoidAlgebra K A) : Point K (ofAffinoid K hA) ≃ MaximalSpectrum A :=
-  Equiv.ulift.trans
-    (Rigid.RigidSpace.pointsOfAffinoidEquiv K (isAffinoidAlgebra_toRigid K A hA))
+    (hA : IsAffinoidAlgebra K A) : Point K (ofAffinoid K hA) ≃ MaximalSpectrum A := sorry
 
 /-- Pullback of maximal ideals along a morphism of affinoid algebras. -/
 noncomputable def maximalSpectrumComap {A : Type v} {B : Type w}
