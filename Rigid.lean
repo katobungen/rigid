@@ -21,6 +21,7 @@ import Rigid.Berkovich.RelativeNonempty
 import Rigid.Berkovich.RelativeSpectrum
 import Rigid.Berkovich.Spectrum
 import Rigid.Development
+import Rigid.RigidSpace.Basic
 import Rigid.TateAlgebra.Basic
 import Rigid.TateAlgebra.Complete
 import Rigid.TateAlgebra.Division
