@@ -224,11 +224,13 @@ theorem exists_div_quotients_aux [CompleteSpace K] (hr0 : 0 < r) (hr1 : r < 1)
     (hGle : ∀ i n, ‖MvPowerSeries.coeff n (G i).1‖ ≤ 1)
     (hGsmall : ∀ i n, ν i ≺[m] n → ‖MvPowerSeries.coeff n (G i).1‖ ≤ r)
     (F : TateAlgebra K ι) :
-    ∃ Q : κ → TateAlgebra K ι, ∀ μ : ι →₀ ℕ, (∃ i, ν i ≤ μ) →
-      MvPowerSeries.coeff μ ((F - ∑ i, Q i * G i : TateAlgebra K ι) : MvPowerSeries ι K) = 0 := by
+    ∃ Q : κ → TateAlgebra K ι, (∀ i, ‖Q i‖ ≤ ‖F‖) ∧
+      ∀ μ : ι →₀ ℕ, (∃ i, ν i ≤ μ) →
+        MvPowerSeries.coeff μ
+          ((F - ∑ i, Q i * G i : TateAlgebra K ι) : MvPowerSeries ι K) = 0 := by
   classical
   by_cases hF : F = 0
-  · exact ⟨0, fun μ _ => by simp [hF]⟩
+  · exact ⟨0, fun i => by simp [hF], fun μ _ => by simp [hF]⟩
   have hFpos : 0 < ‖F‖ := norm_pos_iff.mpr hF
   set θ : ℕ → ℝ := fun k => ‖F‖ * r ^ (k + 1) with hθdef
   have hθpos : ∀ k, 0 < θ k := fun k => mul_pos hFpos (pow_pos hr0 _)
@@ -295,6 +297,21 @@ theorem exists_div_quotients_aux [CompleteSpace K] (hr0 : 0 < r) (hr1 : r < 1)
           rw [hUsucc k]
           simp
       _ ≤ ‖F‖ * r ^ k := hle
+  have hUnorm : ∀ k i, ‖U k i‖ ≤ ‖F‖ := by
+    intro k
+    induction k with
+    | zero =>
+        intro i
+        simp [hUdef]
+    | succ k ih =>
+        intro i
+        have hpow : ‖F‖ * r ^ k ≤ ‖F‖ := by
+          simpa only [mul_one] using
+            mul_le_mul_of_nonneg_left (pow_le_one₀ hr0.le hr1.le) (norm_nonneg F)
+        have hadd : U k i + (U (k + 1) i - U k i) = U (k + 1) i := by abel
+        rw [← hadd]
+        exact (IsUltrametricDist.norm_add_le_max _ _).trans
+          (max_le (ih i) ((hdiff k i).trans hpow))
   have hcauchy : ∀ i, CauchySeq fun k => U k i := by
     intro i
     apply cauchySeq_of_le_geometric r ‖F‖ hr1
@@ -302,7 +319,9 @@ theorem exists_div_quotients_aux [CompleteSpace K] (hr0 : 0 < r) (hr1 : r < 1)
     rw [dist_eq_norm, norm_sub_rev]
     exact hdiff k i
   choose Qlim hQlim using fun i => cauchySeq_tendsto_of_complete (hcauchy i)
-  refine ⟨Qlim, fun μ hμ => ?_⟩
+  have hQlimNorm : ∀ i, ‖Qlim i‖ ≤ ‖F‖ := fun i =>
+    le_of_tendsto' (hQlim i).norm fun k => hUnorm k i
+  refine ⟨Qlim, hQlimNorm, fun μ hμ => ?_⟩
   -- The corrected series converge, hence so do their coefficients.
   have h1 : Tendsto (fun k => F - ∑ i, U k i * G i) atTop (𝓝 (F - ∑ i, Qlim i * G i)) :=
     tendsto_const_nhds.sub (tendsto_finsetSum _ fun i _ => (hQlim i).mul tendsto_const_nhds)
@@ -375,7 +394,7 @@ theorem exists_forall_coeff_eq_zero_of_leadingDegree_le [CompleteSpace K]
       _ ≤ Finset.univ.sup' Finset.univ_nonempty fun i => ‖G' i - leadingPart (G' i)‖ :=
           Finset.le_sup' (fun i => ‖G' i - leadingPart (G' i)‖) (Finset.mem_univ i)
       _ ≤ r := le_max_right _ _
-  obtain ⟨Q', hQ'⟩ := exists_div_quotients_aux m hr0 hr1 hG'1 hG'le hGsmall F
+  obtain ⟨Q', _, hQ'⟩ := exists_div_quotients_aux m hr0 hr1 hG'1 hG'le hGsmall F
   refine ⟨fun i => (leadingCoeff m (G i))⁻¹ • Q' i, fun μ hμ => ?_⟩
   have hsum : ∑ i, ((leadingCoeff m (G i))⁻¹ • Q' i) * G i = ∑ i, Q' i * G' i :=
     Finset.sum_congr rfl fun i _ => by

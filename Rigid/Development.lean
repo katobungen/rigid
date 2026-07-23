@@ -14,6 +14,8 @@ import Rigid.AffinoidAlgebra.QuotientTopology
 import Rigid.AffinoidAlgebra.RationalDatum
 import Rigid.AffinoidAlgebra.RationalLocalization
 import Rigid.AffinoidAlgebra.ResidueNorm
+import Rigid.AffinoidAlgebra.SpectralPresentation
+import Rigid.AffinoidSpectrum.Restriction
 import Rigid.TateAlgebra.Complete
 import Rigid.TateAlgebra.Noetherian
 import Rigid.TateAlgebra.Multiplicative
@@ -1384,19 +1386,82 @@ theorem inter_subset_right (U V : AffinoidRationalSubdomain K A) :
 /-- Restriction of analytic functions along an inclusion of rational subdomains. -/
 noncomputable def restriction (hA : IsAffinoidAlgebra K A)
     {U V : AffinoidRationalSubdomain K A}
-    (hUV : U.carrier ⊆ V.carrier) : ContinuousAlgHom K V.Sections U.Sections := sorry
+    (hUV : U.carrier ⊆ V.carrier) : ContinuousAlgHom K V.Sections U.Sections := by
+  let U' : Rigid.AffinoidRationalSubdomain K A :=
+    { n := U.n, g := U.g, f := U.f, isRational := U.isRational }
+  let V' : Rigid.AffinoidRationalSubdomain K A :=
+    { n := V.n, g := V.g, f := V.f, isRational := V.isRational }
+  have hUV' : U'.carrier ⊆ V'.carrier := by
+    intro x hx
+    let x' : BerkovichSpectrumOver K A :=
+      { toBerkovichSpectrum :=
+          { seminorm := x.toBerkovichSpectrum.seminorm
+            le_norm' := x.toBerkovichSpectrum.le_norm' }
+        map_algebraMap' := x.map_algebraMap' }
+    have hx' : x' ∈ U.carrier := by
+      intro i
+      change x (U.f i) ≤ x U.g
+      exact hx i
+    have hxV := hUV hx'
+    intro i
+    change x (V.f i) ≤ x V.g
+    exact hxV i
+  by_cases hU : Nontrivial U.Sections
+  · letI := hU
+    letI : Nontrivial U'.Sections := by
+      change Nontrivial (RationalLocalization K A U.n U.g U.f)
+      exact hU
+    let hUaff := isAffinoidAlgebra_rationalLocalization K A hA U.n U.g U.f
+    let P := hUaff.presentation
+    let P' : Rigid.AffinoidPresentation K U.Sections :=
+      { n := P.n, ideal := P.ideal, equiv := P.equiv }
+    have htop : (inferInstance : TopologicalSpace U.Sections) = P'.residueTopology := by
+      calc
+        (inferInstance : TopologicalSpace U.Sections) =
+            affinoidTopology K U.Sections hUaff :=
+          topology_eq_affinoidTopology_of_isAffinoidAlgebra K U.Sections hUaff
+        _ = P.residueTopology :=
+          affinoidTopology_eq_residueTopology K U.Sections hUaff P
+        _ = P'.residueTopology := rfl
+    exact Rigid.AffinoidRationalSubdomain.restrictionOfSpectralCriterion K A hUV'
+      (Rigid.SpectralPolynomial.hasPowerBoundedSpectralCriterion_of_affinoidPresentation
+        K P' htop)
+  · letI : Subsingleton U.Sections := not_nontrivial_iff_subsingleton.mp hU
+    letI : Subsingleton U'.Sections := by
+      change Subsingleton (RationalLocalization K A U.n U.g U.f)
+      infer_instance
+    exact Rigid.AffinoidRationalSubdomain.restrictionOfPointwisePowerBounded K A hUV'
+      fun i ↦ by
+        rw [Subsingleton.elim
+          (Rigid.RationalLocalization.quotientCoordinate K A
+            (f := V'.f)
+            (Rigid.RationalLocalization.baseMap K A U'.n U'.g U'.f)
+            (Rigid.AffinoidRationalSubdomain.isUnit_baseMap_denominator_of_subset
+              K A hUV') i) 0]
+        exact Rigid.isPowerBounded_zero
 
 @[simp]
 theorem restriction_id (hA : IsAffinoidAlgebra K A) (U : AffinoidRationalSubdomain K A) :
     restriction K A hA (U := U) (V := U) Set.Subset.rfl =
-      ContinuousAlgHom.id K U.Sections := sorry
+      ContinuousAlgHom.id K U.Sections := by
+  unfold restriction
+  dsimp only
+  split
+  · apply Rigid.AffinoidRationalSubdomain.restrictionOfPointwisePowerBounded_id
+  · apply Rigid.AffinoidRationalSubdomain.restrictionOfPointwisePowerBounded_id
 
 @[simp]
 theorem restriction_comp (hA : IsAffinoidAlgebra K A)
     {U V W : AffinoidRationalSubdomain K A}
     (hUV : U.carrier ⊆ V.carrier) (hWU : W.carrier ⊆ U.carrier) :
     (restriction K A hA hWU).comp (restriction K A hA hUV) =
-      restriction K A hA (hWU.trans hUV) := sorry
+      restriction K A hA (hWU.trans hUV) := by
+  unfold restriction
+  dsimp only
+  repeat' split
+  all_goals
+    try unfold Rigid.AffinoidRationalSubdomain.restrictionOfSpectralCriterion
+    apply Rigid.AffinoidRationalSubdomain.restrictionOfPointwisePowerBounded_comp
 
 /-- A finite rational cover of a rational subdomain. -/
 structure Cover (U : AffinoidRationalSubdomain K A) where

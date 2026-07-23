@@ -456,6 +456,37 @@ private theorem exists_tateShear_leadingDegree_eq_single_zero
       · simpa using hμdlt
   exact ⟨p, d, by simpa [F] using hleadF⟩
 
+/-- A polynomial triangular coordinate change makes every nonzero Tate series distinguished in
+the first variable, expressed without exposing the implementation of the shear. -/
+theorem exists_algEquiv_leadingDegree_eq_single_zero
+    (f : TateAlgebra K (Fin (n + 1))) (hf : f ≠ 0) :
+    ∃ (ψ : TateAlgebra K (Fin (n + 1)) ≃ₐ[K] TateAlgebra K (Fin (n + 1))) (d : ℕ),
+      leadingDegree (MonomialOrder.lex : MonomialOrder (Fin (n + 1))) (ψ f) =
+        Finsupp.single 0 d := by
+  classical
+  obtain ⟨p, d, hd⟩ := exists_tateShear_leadingDegree_eq_single_zero K f hf
+  have h1 : ‖(1 : K)‖ ≤ 1 := by simp
+  have hn1 : ‖(-1 : K)‖ ≤ 1 := by simp
+  have hnn1 : ‖-(-1 : K)‖ ≤ 1 := by simp
+  let ψ : TateAlgebra K (Fin (n + 1)) →ₐ[K] TateAlgebra K (Fin (n + 1)) :=
+    (tateShear K p 1 h1).toAlgHom
+  let ψinv : TateAlgebra K (Fin (n + 1)) →ₐ[K] TateAlgebra K (Fin (n + 1)) :=
+    (tateShear K p (-1) hn1).toAlgHom
+  have hright : ψ.comp ψinv = AlgHom.id K (TateAlgebra K (Fin (n + 1))) := by
+    apply DFunLike.ext _ _
+    intro x
+    dsimp only [ψ, ψinv, AlgHom.comp_apply, AlgHom.id_apply]
+    exact tateShear_comp_neg K p 1 h1 hn1 x
+  have hleft : ψinv.comp ψ = AlgHom.id K (TateAlgebra K (Fin (n + 1))) := by
+    apply DFunLike.ext _ _
+    intro x
+    dsimp only [ψ, ψinv, AlgHom.comp_apply, AlgHom.id_apply]
+    convert tateShear_comp_neg K p (-1) hn1 hnn1 x using 1
+    all_goals simp
+  let e := AlgEquiv.ofAlgHom ψ ψinv hright hleft
+  refine ⟨e, d, ?_⟩
+  exact hd
+
 end CoordinateChange
 
 /-- Include the Tate algebra in variables `1, ..., n` into the one in variables `0, ..., n`. -/
@@ -503,6 +534,32 @@ private theorem succMap_tateVariable (n : ℕ) (i : Fin n) :
       (MvPowerSeries.X i : MvPowerSeries (Fin n) K) =
     (MvPowerSeries.X i.succ : MvPowerSeries (Fin (n + 1)) K)
   simp
+
+/-- The remaining-variable inclusion preserves the Gauss norm. -/
+private theorem norm_succMap_eq (n : ℕ) (a : TateAlgebra K (Fin n)) :
+    ‖succMap K n a‖ = ‖a‖ := by
+  apply le_antisymm
+  · rw [norm_eq_sSup_coeff]
+    refine csSup_le (Set.range_nonempty _) ?_
+    rintro _ ⟨μ, rfl⟩
+    change ‖MvPowerSeries.coeff μ
+      (MvPowerSeries.rename (Fin.succEmb n) a.1)‖ ≤ ‖a‖
+    by_cases hμ : μ ∈ Set.range (Finsupp.embDomain (Fin.succEmb n))
+    · obtain ⟨ν, rfl⟩ := hμ
+      rw [MvPowerSeries.coeff_embDomain_rename]
+      exact norm_coeff_le_norm K (Fin n) a ν
+    · rw [MvPowerSeries.coeff_rename_eq_zero]
+      · exact norm_zero.trans_le (norm_nonneg a)
+      · rintro ⟨ν, hν⟩
+        apply hμ
+        exact ⟨ν, by simpa [Finsupp.embDomain_eq_mapDomain] using hν⟩
+  · rw [norm_eq_sSup_coeff]
+    refine csSup_le (Set.range_nonempty _) ?_
+    rintro _ ⟨ν, rfl⟩
+    change ‖MvPowerSeries.coeff ν a.1‖ ≤ ‖succMap K n a‖
+    rw [← MvPowerSeries.coeff_embDomain_rename (Fin.succEmb n) a.1 ν]
+    exact norm_coeff_le_norm K (Fin (n + 1)) (succMap K n a)
+      (Finsupp.embDomain (Fin.succEmb n) ν)
 
 /-- The coefficient series at a fixed exponent of the first variable. -/
 private noncomputable def coeffSlice (n j : ℕ) (f : TateAlgebra K (Fin (n + 1))) :
@@ -675,8 +732,8 @@ private theorem finite_tateAlgebra_fin_zero : Module.Finite K (TateAlgebra K (Fi
 private theorem exists_finite_injective_tateAlgebra_of_surjective (n : ℕ) :
     ∀ {A : Type v} [CommRing A] [Algebra K A] [Nontrivial A]
       (π : TateAlgebra K (Fin n) →ₐ[K] A), Function.Surjective π →
-      ∃ (d : ℕ) (ι : TateAlgebra K (Fin d) →ₐ[K] A),
-        Function.Injective ι ∧ ι.Finite := by
+      ∃ (d : ℕ) (j : TateAlgebra K (Fin d) →ₐ[K] TateAlgebra K (Fin n)),
+        (∀ a, ‖j a‖ = ‖a‖) ∧ Function.Injective (π.comp j) ∧ (π.comp j).Finite := by
   induction n with
   | zero =>
       intro A _ _ _ π hπ
@@ -699,12 +756,15 @@ private theorem exists_finite_injective_tateAlgebra_of_surjective (n : ℕ) :
           _ = algebraMap K (TateAlgebra K (Fin 0)) (MvPowerSeries.coeff 0 g.1) :=
             congrArg _ hcoeff
           _ = g := hscalar g
-      exact ⟨0, π, hπinj, AlgHom.Finite.of_surjective π hπ⟩
+      refine ⟨0, AlgHom.id K _, fun _ ↦ rfl, ?_, ?_⟩
+      · simpa using hπinj
+      · simpa using AlgHom.Finite.of_surjective π hπ
   | succ n ih =>
       intro A _ _ _ π hπ
       by_cases hker : RingHom.ker π = ⊥
-      · exact ⟨n + 1, π, (RingHom.injective_iff_ker_eq_bot π).mpr hker,
-          AlgHom.Finite.of_surjective π hπ⟩
+      · refine ⟨n + 1, AlgHom.id K _, fun _ ↦ rfl, ?_, ?_⟩
+        · simpa using (RingHom.injective_iff_ker_eq_bot π).mpr hker
+        · simpa using AlgHom.Finite.of_surjective π hπ
       · obtain ⟨g, hg, hg0⟩ := Submodule.exists_mem_ne_zero_of_ne_bot
           (p := RingHom.ker π) hker
         obtain ⟨p, d, hgd⟩ := exists_tateShear_leadingDegree_eq_single_zero K g hg0
@@ -747,9 +807,34 @@ private theorem exists_finite_injective_tateAlgebra_of_surjective (n : ℕ) :
         have hvalfinite : (Subalgebra.val C).Finite := by
           apply AlgHom.Finite.of_comp_finite (f := h.rangeRestrict)
           simpa [C] using hhfinite
-        obtain ⟨e, ι, hιinj, hιfinite⟩ := ih h.rangeRestrict h.rangeRestrict_surjective
-        refine ⟨e, (Subalgebra.val C).comp ι, Subtype.val_injective.comp hιinj, ?_⟩
-        exact AlgHom.Finite.comp hvalfinite hιfinite
+        obtain ⟨e, j, hjnorm, hιinj, hιfinite⟩ :=
+          ih h.rangeRestrict h.rangeRestrict_surjective
+        let j' : TateAlgebra K (Fin e) →ₐ[K] TateAlgebra K (Fin (n + 1)) :=
+          ψinv.toAlgHom.comp ((succMap K n).comp j)
+        have hj'norm (a : TateAlgebra K (Fin e)) : ‖j' a‖ = ‖a‖ := by
+          change ‖ψinv (succMap K n (j a))‖ = ‖a‖
+          rw [show ‖ψinv (succMap K n (j a))‖ = ‖succMap K n (j a)‖ by
+            exact norm_tateShear_eq K p (-1) (by simp) (by simp) _,
+            norm_succMap_eq K n, hjnorm]
+        have hcomp :
+            π.comp j' = (Subalgebra.val C).comp (h.rangeRestrict.comp j) := by
+          ext a
+          rfl
+        refine ⟨e, j', hj'norm, ?_, ?_⟩
+        · rw [hcomp]
+          exact Subtype.val_injective.comp hιinj
+        · rw [hcomp]
+          exact AlgHom.Finite.comp hvalfinite hιfinite
+
+/-- A surjective Tate presentation contains an isometric Noether-normalizing Tate subalgebra.
+Keeping the factorization through the source presentation is the coefficient-comparison input in
+the minimal-prime proof of Proposition 4.5.3. -/
+theorem exists_isometric_normalizationFactor_of_surjective
+    {A : Type v} [CommRing A] [Algebra K A] [Nontrivial A] (n : ℕ)
+    (π : TateAlgebra K (Fin n) →ₐ[K] A) (hπ : Function.Surjective π) :
+    ∃ (d : ℕ) (j : TateAlgebra K (Fin d) →ₐ[K] TateAlgebra K (Fin n)),
+      (∀ a, ‖j a‖ = ‖a‖) ∧ Function.Injective (π.comp j) ∧ (π.comp j).Finite :=
+  exists_finite_injective_tateAlgebra_of_surjective K n π hπ
 
 end Slices
 
@@ -780,7 +865,9 @@ theorem exists_finite_injective_tateAlgebra_of_isAffinoidAlgebra [Nontrivial A]
     (hA : IsAffinoidAlgebra K A) :
     ∃ (d : ℕ) (ι : TateAlgebra K (Fin d) →ₐ[K] A), Function.Injective ι ∧ ι.Finite := by
   obtain ⟨n, π, hπ⟩ := exists_surjective_presentation_of_isAffinoidAlgebra K A hA
-  exact TateAlgebra.exists_finite_injective_tateAlgebra_of_surjective K n π hπ
+  obtain ⟨d, j, -, hinj, hfinite⟩ :=
+    TateAlgebra.exists_isometric_normalizationFactor_of_surjective K n π hπ
+  exact ⟨d, π.comp j, hinj, hfinite⟩
 
 /-- **Affinoid Nullstellensatz.** An affinoid algebra which is a field is a finite-dimensional
 algebra over the ground field. -/

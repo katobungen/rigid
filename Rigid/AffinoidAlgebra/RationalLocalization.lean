@@ -34,6 +34,12 @@ noncomputable def rationalLocalizationIdeal (n : ℕ) (g : A) (f : Fin n → A) 
   (Ideal.span (Set.range fun i ↦
     TateAlgebra.C A (Fin n) g * tateVariable A (Fin n) i - TateAlgebra.C A (Fin n) (f i))).closure
 
+noncomputable instance rationalLocalizationIdealIsClosed (n : ℕ) (g : A) (f : Fin n → A) :
+    IsClosed ((rationalLocalizationIdeal A n g f : Ideal (TateAlgebra A (Fin n))) :
+      Set (TateAlgebra A (Fin n))) := by
+  unfold rationalLocalizationIdeal
+  exact isClosed_closure
+
 /-- The Banach algebra `A⟨T₁, ..., Tₙ⟩ / (gTᵢ - fᵢ)`. -/
 abbrev RationalLocalization
     (K : Type u) [NontriviallyNormedField K] [CompleteSpace K] [IsUltrametricDist K]
@@ -41,24 +47,28 @@ abbrev RationalLocalization
     [IsUltrametricDist A] (n : ℕ) (g : A) (f : Fin n → A) : Type v :=
   TateAlgebra A (Fin n) ⧸ rationalLocalizationIdeal A n g f
 
-noncomputable instance rationalLocalizationNormedCommRing (n : ℕ) (g : A) (f : Fin n → A) :
+@[reducible] noncomputable instance (priority := 100) rationalLocalizationNormedCommRing
+    (n : ℕ) (g : A) (f : Fin n → A) :
     NormedCommRing (RationalLocalization K A n g f) := by
   letI : IsClosed ((rationalLocalizationIdeal A n g f : Ideal (TateAlgebra A (Fin n))) :
       Set (TateAlgebra A (Fin n))) := isClosed_closure
   dsimp only [RationalLocalization]
   infer_instance
 
-noncomputable instance rationalLocalizationAlgebra (n : ℕ) (g : A) (f : Fin n → A) :
+@[reducible] noncomputable instance (priority := 100) rationalLocalizationAlgebra
+    (n : ℕ) (g : A) (f : Fin n → A) :
     Algebra A (RationalLocalization K A n g f) := by
   dsimp only [RationalLocalization]
   infer_instance
 
-noncomputable instance rationalLocalizationNormedAlgebra (n : ℕ) (g : A) (f : Fin n → A) :
+@[reducible] noncomputable instance (priority := 100) rationalLocalizationNormedAlgebra
+    (n : ℕ) (g : A) (f : Fin n → A) :
     NormedAlgebra K (RationalLocalization K A n g f) := by
   dsimp only [RationalLocalization]
   infer_instance
 
-noncomputable instance rationalLocalizationCompleteSpace (n : ℕ) (g : A) (f : Fin n → A) :
+noncomputable instance (priority := 100) rationalLocalizationCompleteSpace
+    (n : ℕ) (g : A) (f : Fin n → A) :
     CompleteSpace (RationalLocalization K A n g f) := by
   dsimp only [RationalLocalization]
   infer_instance
@@ -84,8 +94,12 @@ noncomputable instance rationalLocalizationIsUltrametricDist
 
 noncomputable instance rationalLocalizationIsScalarTower
     (n : ℕ) (g : A) (f : Fin n → A) :
-    IsScalarTower K A (RationalLocalization K A n g f) :=
-  IsScalarTower.of_algebraMap_eq fun _ ↦ rfl
+    IsScalarTower K A (RationalLocalization K A n g f) := by
+  constructor
+  intro x y z
+  induction z using Quotient.inductionOn'
+  exact congrArg (Ideal.Quotient.mk (rationalLocalizationIdeal A n g f))
+    (smul_assoc x y _)
 
 namespace RationalLocalization
 

@@ -168,6 +168,99 @@ private theorem improve_mem_mulAt_of_mem (p : Candidate R) {c d : R} (hd : p ∈
   · exact hd a
   · exact seminormFromConst_isMul_of_isMul p.map_one.le hc p.powMul hd a
 
+private theorem improve_apply_of_mem_mulAt (p : Candidate R) {c d : R} (hd : p ∈ mulAt R d) :
+    (improve R p c).toRingSeminorm d = p.toRingSeminorm d := by
+  unfold improve
+  split_ifs with hc
+  · rfl
+  · exact seminormFromConst_apply_of_isMul p.map_one.le hc p.powMul hd
+
+private theorem improve_apply_self (p : Candidate R) (c : R) :
+    (improve R p c).toRingSeminorm c = p.toRingSeminorm c := by
+  unfold improve
+  split_ifs with hc
+  · rfl
+  · exact seminormFromConst_apply_c p.map_one.le hc p.powMul
+
+/-- The normalized ring seminorm associated with the given norm. -/
+noncomputable def normalizedNormSeminorm : RingSeminorm R :=
+  seminormFromBounded
+    (f := fun a : R ↦ ‖a‖) (c := 1) norm_zero norm_nonneg
+      (fun a b ↦ by simpa using norm_mul_le a b) norm_add_le norm_neg
+
+@[simp]
+theorem normalizedNormSeminorm_one [Nontrivial R] : normalizedNormSeminorm R 1 = 1 := by
+  apply seminormFromBounded_one (c := 1)
+  · intro h
+    have h1 := congr_fun h (1 : R)
+    simpa using (norm_pos_iff.mpr (one_ne_zero : (1 : R) ≠ 0)).ne' h1
+  · exact norm_nonneg
+  · intro a b
+    simpa using norm_mul_le a b
+
+theorem normalizedNormSeminorm_le_norm (a : R) : normalizedNormSeminorm R a ≤ ‖a‖ := by
+  unfold normalizedNormSeminorm
+  change seminormFromBounded' (fun x : R ↦ ‖x‖) a ≤ ‖a‖
+  simpa only [one_mul] using (seminormFromBounded_le (c := 1) norm_nonneg
+    (fun x y ↦ by simpa using norm_mul_le x y) a)
+
+/-- The spectral radius of an element, computed using the normalized seminorm associated with the
+given norm.  Normalization does not affect asymptotic roots. -/
+noncomputable def spectralRadius (a : R) : ℝ :=
+  smoothingFun (normalizedNormSeminorm R) a
+
+/-- The spectral smoothing of the normalized norm, regarded as a candidate seminorm. -/
+private noncomputable def spectralCandidate [Nontrivial R] : Candidate R := by
+  let μ : RingSeminorm R := normalizedNormSeminorm R
+  have hμ1 : μ 1 ≤ 1 := (normalizedNormSeminorm_one R).le
+  let f : RingSeminorm R := Rigid.spectralSmoothingSeminorm μ hμ1
+  have hf_one : f 1 = 1 := by
+    change smoothingFun μ 1 = 1
+    rw [smoothingFun_of_powMul μ hμ1 (x := 1)]
+    · exact normalizedNormSeminorm_one R
+    · intro n hn
+      simp only [show μ 1 = 1 from normalizedNormSeminorm_one R, one_pow]
+  exact Candidate.ofRingSeminorm R f hf_one
+    (Rigid.isPowMul_spectralSmoothingSeminorm μ hμ1)
+    (fun a ↦ (Rigid.spectralSmoothingSeminorm_le μ hμ1 a).trans
+      (normalizedNormSeminorm_le_norm R a))
+
+private theorem spectralCandidate_apply [Nontrivial R] (a : R) :
+    (spectralCandidate R).toRingSeminorm a = spectralRadius R a :=
+  rfl
+
+private def PreservesSpectralValue (a : R) : Set (Candidate R) :=
+  {p | p.toRingSeminorm a = spectralRadius R a}
+
+private theorem isClosed_preservesSpectralValue (a : R) :
+    IsClosed (PreservesSpectralValue R a) :=
+  isClosed_eq (continuous_eval_candidate R a) continuous_const
+
+private theorem exists_mem_mulAt_finset_preserving_spectralValue [Nontrivial R]
+    (a : R) (s : Finset R) :
+    ∃ p : Candidate R, p ∈ PreservesSpectralValue R a ∩ mulAt R a ∧
+      ∀ c ∈ s, p ∈ mulAt R c := by
+  classical
+  let p₀ : Candidate R := improve R (spectralCandidate R) a
+  have hp₀a : p₀ ∈ mulAt R a := improve_mem_mulAt R (spectralCandidate R) a
+  have hp₀value : p₀ ∈ PreservesSpectralValue R a := by
+    change p₀.toRingSeminorm a = spectralRadius R a
+    rw [show p₀.toRingSeminorm a = (spectralCandidate R).toRingSeminorm a by
+      exact improve_apply_self R (spectralCandidate R) a]
+    exact spectralCandidate_apply R a
+  induction s using Finset.induction with
+  | empty => exact ⟨p₀, ⟨hp₀value, hp₀a⟩, by simp⟩
+  | @insert c s hc ih =>
+      obtain ⟨p, hp, hps⟩ := ih
+      refine ⟨improve R p c, ⟨?_, improve_mem_mulAt_of_mem R p hp.2⟩, ?_⟩
+      · change (improve R p c).toRingSeminorm a = spectralRadius R a
+        rw [improve_apply_of_mem_mulAt R p hp.2]
+        exact hp.1
+      · intro d hd
+        rcases Finset.mem_insert.mp hd with rfl | hd
+        · exact improve_mem_mulAt R p d
+        · exact improve_mem_mulAt_of_mem R p (hps d hd)
+
 private theorem exists_mem_mulAt_finset [Nontrivial R] (s : Finset R) :
     ∃ p : Candidate R, ∀ c ∈ s, p ∈ mulAt R c := by
   classical
@@ -205,6 +298,35 @@ theorem nonempty_of_nontrivial [Nontrivial R] : Nonempty (Rigid.BerkovichSpectru
         map_mul' := hp_mul }
     le_norm' := fun a ↦ (p.1 a).2.2 }
   ⟩
+
+/-- **Berkovich maximum-modulus theorem.** For every element, some bounded multiplicative
+seminorm realizes the spectral smoothing of the given norm. -/
+theorem exists_apply_eq_smoothingFun [Nontrivial R] (a : R) :
+    ∃ x : Rigid.BerkovichSpectrum R, x a = spectralRadius R a := by
+  classical
+  let P : Set (Candidate R) := PreservesSpectralValue R a ∩ mulAt R a
+  have hPcompact : IsCompact P :=
+    ((isClosed_preservesSpectralValue R a).inter (isClosed_mulAt R a)).isCompact
+  have hfinite (s : Finset R) : (P ∩ ⋂ c ∈ s, mulAt R c).Nonempty := by
+    obtain ⟨p, hp, hps⟩ := exists_mem_mulAt_finset_preserving_spectralValue R a s
+    refine ⟨p, hp, ?_⟩
+    simp only [Set.mem_iInter]
+    exact hps
+  obtain ⟨p, hp, hmul⟩ := hPcompact.inter_iInter_nonempty (mulAt R)
+    (isClosed_mulAt R) hfinite
+  have hp_mul (c b : R) : p.toRingSeminorm (c * b) =
+      p.toRingSeminorm c * p.toRingSeminorm b :=
+    (Set.mem_iInter.mp hmul c) b
+  let x : Rigid.BerkovichSpectrum R :=
+    { seminorm :=
+        { toFun := p.toRingSeminorm
+          map_zero' := _root_.map_zero p.toRingSeminorm
+          add_le' := map_add_le_add p.toRingSeminorm
+          neg' := map_neg_eq_map p.toRingSeminorm
+          map_one' := p.map_one
+          map_mul' := hp_mul }
+      le_norm' := fun b ↦ (p.1 b).2.2 }
+  exact ⟨x, hp.1⟩
 
 /-- The Berkovich spectrum of a nonzero nonarchimedean commutative normed ring is nonempty. -/
 theorem nonempty_of_isUltrametric [IsUltrametricDist R] [Nontrivial R] :
