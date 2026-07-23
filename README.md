@@ -11,14 +11,13 @@ dependency order and scope decisions. The global comparison target follows Berko
 faithful and paracompact-equivalence theorem in §1.6 of *Étale cohomology for non-Archimedean
 analytic spaces*.
 
-## GitHub configuration
+## Claiming an issue
 
-To set up your new GitHub repository, follow these steps:
+Anyone can claim an issue by posting a comment containing a line whose entire content is:
 
-* Under your repository name, click **Settings**.
-* In the **Actions** section of the sidebar, click "General".
-* Check the box **Allow GitHub Actions to create and approve pull requests**.
-* Click the **Pages** section of the settings sidebar.
-* In the **Source** dropdown menu, select "GitHub Actions".
+```text
+claimed
+```
 
-After following the steps above, you can remove this section from the README file.
+This adds the `claimed` label; it does not assign the issue to the commenter. To release a claim,
+post a comment containing a line whose entire content is `-claimed`.

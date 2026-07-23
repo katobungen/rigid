@@ -22,6 +22,21 @@ namespace Rigid
 
 section MaximalSpectrum
 
+/-- A ring isomorphism induces an equivalence of maximal spectra by transporting ideals. -/
+noncomputable def maximalSpectrumEquiv {A : Type v} {B : Type w}
+    [CommRing A] [CommRing B] (e : A ≃+* B) :
+    MaximalSpectrum A ≃ MaximalSpectrum B where
+  toFun x :=
+    ⟨Ideal.map e x.asIdeal, x.isMaximal.map_bijective e e.bijective⟩
+  invFun x :=
+    ⟨Ideal.comap e x.asIdeal, x.isMaximal.comap_bijective e e.bijective⟩
+  left_inv x := by
+    apply MaximalSpectrum.ext
+    exact Ideal.comap_map_of_bijective e e.bijective
+  right_inv x := by
+    apply MaximalSpectrum.ext
+    exact Ideal.map_comap_of_surjective e e.surjective x.asIdeal
+
 variable (K : Type u) [NontriviallyNormedField K] [CompleteSpace K] [IsUltrametricDist K]
 
 /-- The inverse image of a maximal ideal under an algebra homomorphism into an affinoid algebra is

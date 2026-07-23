@@ -1,18 +1,16 @@
 import Rigid.AffinoidAlgebra.PowerBounded
+import Rigid.Berkovich.GaussPoint
 import Rigid.Berkovich.RelativeNonempty
-import Rigid.TateAlgebra.Multiplicative
-import Rigid.TateAlgebra.NormedRing
 
 set_option linter.style.header false
-set_option linter.unusedSectionVars false
 
 /-!
-# The affinoid maximum-modulus theorem
+# Maximum-modulus and unit-ball foundations
 
-The Gauss point shows first that the Gauss norm on a strict Tate algebra is its spectral norm.  In
-particular, the power-bounded elements of a Tate algebra are exactly its closed unit ball.  These
-are the base cases for the Noether-normalization proof of the maximum-modulus theorem for general
-strict affinoid algebras.
+Compactness of the relative Berkovich spectrum gives maximum attainment for every element. The
+Gauss point identifies power-bounded elements of a finite Tate algebra with its closed unit ball.
+These facts supply the bounded-coefficient and integrality tools used in the general affinoid
+maximum-modulus argument.
 -/
 
 universe u v
@@ -25,8 +23,9 @@ namespace BerkovichSpectrumOver
 
 variable {A : Type v} [NormedCommRing A] [NormedAlgebra K A]
 
-/-- **Maximum-modulus theorem.** On a nonzero normed algebra, every analytic function attains its
-maximum on the relative Berkovich spectrum. -/
+omit [IsUltrametricDist K] in
+/-- On a nonzero normed algebra, every element attains its maximum on the relative Berkovich
+spectrum. -/
 theorem exists_maximum [Nontrivial A] (a : A) :
     ∃ x : BerkovichSpectrumOver K A, ∀ y : BerkovichSpectrumOver K A, y a ≤ x a := by
   have hne : (Set.univ : Set (BerkovichSpectrumOver K A)).Nonempty :=
@@ -39,7 +38,7 @@ end BerkovichSpectrumOver
 
 namespace TateAlgebra
 
-/-- The Gauss unit ball in a strict Tate algebra. -/
+/-- The Gauss unit ball in a finite strict Tate algebra. -/
 def unitBallSubring (n : ℕ) : Subring (TateAlgebra K (Fin n)) where
   carrier := {f | ‖f‖ ≤ 1}
   zero_mem' := by simp
@@ -50,42 +49,30 @@ def unitBallSubring (n : ℕ) : Subring (TateAlgebra K (Fin n)) where
   mul_mem' {f g} hf hg :=
     (norm_mul_le f g).trans (by simpa using mul_le_mul hf hg (norm_nonneg g) zero_le_one)
 
-/-- The relative Berkovich point defined by the multiplicative Gauss norm. -/
-noncomputable def gaussPoint (n : ℕ) : BerkovichSpectrumOver K (TateAlgebra K (Fin n)) where
-  toBerkovichSpectrum :=
-    { seminorm :=
-        { toFun := fun f ↦ ‖f‖
-          map_zero' := norm_zero
-          add_le' := norm_add_le
-          neg' := norm_neg
-          map_one' := by
-            change ‖(1 : TateAlgebra K (Fin n))‖ = 1
-            rw [show (1 : TateAlgebra K (Fin n)) = TateAlgebra.C K (Fin n) 1 by
-              exact (map_one (algebraMap K (TateAlgebra K (Fin n)))).symm,
-              Rigid.norm_C, norm_one]
-          map_mul' := norm_mul }
-      le_norm' := fun _ ↦ le_rfl }
-  map_algebraMap' := fun r ↦ by
-    change ‖algebraMap K (TateAlgebra K (Fin n)) r‖ = ‖r‖
-    change ‖TateAlgebra.C K (Fin n) r‖ = ‖r‖
-    exact Rigid.norm_C K (Fin n) r
+/-- Compatibility alias for the finite-variable Gauss point. -/
+noncomputable abbrev gaussPoint (n : ℕ) :
+    BerkovichSpectrumOver K (TateAlgebra K (Fin n)) :=
+  BerkovichSpectrumOver.gaussPoint K (Fin n)
 
 @[simp]
 theorem gaussPoint_apply (n : ℕ) (f : TateAlgebra K (Fin n)) :
-    gaussPoint K n f = ‖f‖ := rfl
+    gaussPoint K n f = ‖f‖ :=
+  BerkovichSpectrumOver.gaussPoint_apply K (Fin n) f
 
 /-- The Gauss point realizes the maximum modulus of every function on a strict Tate algebra. -/
 theorem le_gaussPoint (n : ℕ) (x : BerkovichSpectrumOver K (TateAlgebra K (Fin n)))
-    (f : TateAlgebra K (Fin n)) : x f ≤ gaussPoint K n f :=
-  BerkovichSpectrumOver.le_norm K _ x f
+    (f : TateAlgebra K (Fin n)) : x f ≤ gaussPoint K n f := by
+  rw [gaussPoint_apply]
+  exact BerkovichSpectrumOver.le_norm K _ x f
 
-/-- In a strict Tate algebra, power-boundedness is equivalent to membership in the Gauss unit
-ball. -/
+/-- In a finite strict Tate algebra, power-boundedness is equivalent to membership in the Gauss
+unit ball. -/
 theorem isPowerBounded_iff_norm_le_one {n : ℕ} {f : TateAlgebra K (Fin n)} :
     IsPowerBounded f ↔ ‖f‖ ≤ 1 := by
   constructor
   · intro hf
-    simpa using IsPowerBounded.apply_le_one K (gaussPoint K n) hf
+    simpa using BerkovichSpectrumOver.apply_le_one_of_isPowerBounded K _
+      (BerkovichSpectrumOver.gaussPoint K (Fin n)) hf
   · exact isPowerBounded_of_norm_le_one
 
 @[simp]
@@ -94,7 +81,7 @@ theorem mem_unitBallSubring_iff {n : ℕ} {f : TateAlgebra K (Fin n)} :
   rw [isPowerBounded_iff_norm_le_one]
   rfl
 
-variable {B : Type v} [NormedCommRing B] [NormedAlgebra K B] [IsUltrametricDist B]
+variable {B : Type v} [NormedCommRing B] [NormedAlgebra K B]
 
 /-- The image of the Tate unit ball under a continuous homomorphism is uniformly bounded. -/
 theorem bddAbove_image_unitBall (n : ℕ)

@@ -8,9 +8,9 @@ set_option linter.style.header false
 
 Every contractive multiplicative seminorm on a normed algebra necessarily restricts to the
 specified ground-field norm. For the upper bound, apply contractivity to arbitrary powers of a
-scalar; the fixed factor `‖1‖` disappears asymptotically. Applying that bound to a nonzero scalar and
-its inverse gives the reverse inequality. Thus the relative and unrestricted Berkovich spectra
-are homeomorphic. General Berkovich nonemptiness immediately gives relative nonemptiness.
+scalar; the fixed factor `‖1‖` disappears asymptotically. Applying that bound to a nonzero
+scalar and its inverse gives the reverse inequality. Thus the relative and unrestricted Berkovich
+spectra are homeomorphic. General Berkovich nonemptiness immediately gives relative nonemptiness.
 -/
 
 universe u v

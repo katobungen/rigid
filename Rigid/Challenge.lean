@@ -1676,6 +1676,31 @@ noncomputable def germ {X : BerkovichSpace K}
 
 end StructureSheaf
 
+/-- The functor from Berkovich spaces to their underlying mathlib locally ringed spaces. -/
+noncomputable def locallyRingedSpaceFunctor :
+    BerkovichSpace K ⥤ AlgebraicGeometry.LocallyRingedSpace.{u + 1} := sorry
+
+/-- The ordinary locally ringed space underlying a Berkovich analytic space. -/
+noncomputable def toLocallyRingedSpace (X : BerkovichSpace K) :
+    AlgebraicGeometry.LocallyRingedSpace.{u + 1} :=
+  (locallyRingedSpaceFunctor K).obj X
+
+/-- The specified point topology agrees with the underlying space of the locally ringed model. -/
+noncomputable def pointHomeomorphToLocallyRingedSpace (X : BerkovichSpace K) :
+    Point K X ≃ₜ (toLocallyRingedSpace K X).toTopCat := sorry
+
+/-- Forgetting the Berkovich analytic structure to a locally ringed space is faithful. -/
+noncomputable instance locallyRingedSpaceFunctorFaithful :
+    (locallyRingedSpaceFunctor K).Faithful := sorry
+
+/-- The point homeomorphism is natural with respect to analytic morphisms. -/
+@[simp]
+theorem pointHomeomorphToLocallyRingedSpace_naturality
+    {X Y : BerkovichSpace K} (f : X ⟶ Y) (x : Point K X) :
+    pointHomeomorphToLocallyRingedSpace K Y (Point.map K f x) =
+      ((locallyRingedSpaceFunctor K).map f).toHom.base
+        (pointHomeomorphToLocallyRingedSpace K X x) := sorry
+
 /-- Concrete data of a morphism of Berkovich analytic spaces. -/
 structure AnalyticMorphismData (X Y : BerkovichSpace K) where
   base : Point K X → Point K Y
@@ -1741,6 +1766,58 @@ theorem analyticHomEquiv_comp {X Y Z : BerkovichSpace K} (f : X ⟶ Y) (g : Y �
       AnalyticMorphismData.comp K (analyticHomEquiv K X Y f)
         (analyticHomEquiv K Y Z g) := sorry
 
+/-- An analytic domain in a Berkovich space. Unlike an ordinary open subset, an analytic domain
+carries the induced analytic structure and participates in the Berkovich G-topology. -/
+def AnalyticDomain (X : BerkovichSpace K) : Type (u + 1) := sorry
+
+/-- Analytic domains form a category under admissible inclusions. -/
+noncomputable instance analyticDomainCategory (X : BerkovichSpace K) :
+    Category.{u + 1} (AnalyticDomain K X) := sorry
+
+/-- There is at most one admissible inclusion between two analytic domains. -/
+noncomputable instance analyticDomainIsThin (X : BerkovichSpace K) :
+    Quiver.IsThin (AnalyticDomain K X) := sorry
+
+namespace AnalyticDomain
+
+/-- The point set underlying an analytic domain. -/
+noncomputable def carrier {X : BerkovichSpace K} (U : AnalyticDomain K X) :
+    Set (Point K X) := sorry
+
+/-- Morphisms of analytic domains are exactly inclusions of their point sets. -/
+theorem nonempty_hom_iff_subset {X : BerkovichSpace K} (U V : AnalyticDomain K X) :
+    Nonempty (U ⟶ V) ↔ carrier K U ⊆ carrier K V := sorry
+
+/-- Inverse image of analytic domains along an analytic morphism. -/
+noncomputable def preimage {X Y : BerkovichSpace K} (f : X ⟶ Y) :
+    AnalyticDomain K Y ⥤ AnalyticDomain K X := sorry
+
+/-- The carrier of an inverse-image domain is the pointwise inverse image. -/
+@[simp]
+theorem carrier_preimage {X Y : BerkovichSpace K} (f : X ⟶ Y) (U : AnalyticDomain K Y) :
+    carrier K ((preimage K f).obj U) = Point.map K f ⁻¹' carrier K U := sorry
+
+end AnalyticDomain
+
+/-- The Grothendieck topology of admissible coverings on analytic domains. -/
+noncomputable def analyticDomainGrothendieckTopology (X : BerkovichSpace K) :
+    GrothendieckTopology (AnalyticDomain K X) := sorry
+
+/-- Inverse image of analytic domains is continuous for their Grothendieck topologies. -/
+noncomputable instance AnalyticDomain.preimageIsContinuous
+    {X Y : BerkovichSpace K} (f : X ⟶ Y) :
+    (AnalyticDomain.preimage K f).IsContinuous
+      (analyticDomainGrothendieckTopology K Y) (analyticDomainGrothendieckTopology K X) := sorry
+
+/-- Restriction of a Berkovich space to an analytic domain. -/
+noncomputable def restrictToAnalyticDomain {X : BerkovichSpace K}
+    (U : AnalyticDomain K X) : BerkovichSpace K := sorry
+
+/-- Restriction to an analytic domain has the corresponding subspace of points. -/
+noncomputable def pointsRestrictToAnalyticDomainHomeomorph {X : BerkovichSpace K}
+    (U : AnalyticDomain K X) :
+    Point K (restrictToAnalyticDomain K U) ≃ₜ ↥U.carrier := sorry
+
 /-- An affinoid domain in a Berkovich space. -/
 def AffinoidDomain (X : BerkovichSpace K) : Type (u + 1) := sorry
 
@@ -1749,6 +1826,15 @@ namespace AffinoidDomain
 /-- The set of points belonging to an affinoid domain. -/
 noncomputable def carrier {X : BerkovichSpace K} (U : AffinoidDomain K X) :
     Set (Point K X) := sorry
+
+/-- Every affinoid domain determines an analytic domain. -/
+noncomputable def toAnalyticDomain {X : BerkovichSpace K} (U : AffinoidDomain K X) :
+    AnalyticDomain K X := sorry
+
+/-- Passing to the underlying analytic domain preserves the point set. -/
+@[simp]
+theorem carrier_toAnalyticDomain {X : BerkovichSpace K} (U : AffinoidDomain K X) :
+    (toAnalyticDomain K U).carrier = U.carrier := sorry
 
 /-- An affinoid domain is modeled on a strict affinoid algebra. -/
 def IsStrict {X : BerkovichSpace K} (U : AffinoidDomain K X) : Prop := sorry
@@ -1816,9 +1902,52 @@ theorem isParacompact_iff_of_iso {X Y : BerkovichSpace K} (e : X ≅ Y) :
 theorem isHausdorff_iff_of_iso {X Y : BerkovichSpace K} (e : X ≅ Y) :
     IsHausdorff K X ↔ IsHausdorff K Y := sorry
 
+/-- A universe-controlled point space for an affinoid Berkovich spectrum. -/
+noncomputable def affinoidPointTopCat {A : Type u} [CommRing A] [Algebra K A]
+    (_hA : IsAffinoidAlgebra K A) : TopCat.{u + 1} := sorry
+
+/-- The universe-controlled point space is homeomorphic to the relative Berkovich spectrum. -/
+noncomputable def affinoidPointHomeomorph {A : Type u} [CommRing A] [Algebra K A]
+    (hA : IsAffinoidAlgebra K A) :
+    letI : NormedCommRing A := hA.presentation.residueNormedCommRing K A
+    letI : NormedAlgebra K A := hA.presentation.residueNormedAlgebra K A
+    affinoidPointTopCat K hA ≃ₜ BerkovichSpectrumOver K A := sorry
+
+/-- The analytic structure sheaf on an affinoid Berkovich spectrum. -/
+noncomputable def affinoidStructureSheaf {A : Type u} [CommRing A] [Algebra K A]
+    (hA : IsAffinoidAlgebra K A) :
+    TopCat.Sheaf CommRingCat.{u + 1} (affinoidPointTopCat K hA) := sorry
+
+/-- Global sections of the affinoid structure sheaf recover the coordinate ring. -/
+noncomputable def affinoidStructureSheafGlobalSectionsEquiv
+    {A : Type u} [CommRing A] [Algebra K A] (hA : IsAffinoidAlgebra K A) :
+    ((affinoidStructureSheaf K hA).presheaf.obj
+      (Opposite.op (⊤ : TopologicalSpace.Opens (affinoidPointTopCat K hA))) : Type (u + 1)) ≃+*
+      A := sorry
+
+/-- Stalks of the affinoid structure sheaf are local rings. -/
+noncomputable instance affinoidStructureSheafStalkIsLocalRing
+    {A : Type u} [CommRing A] [Algebra K A] (hA : IsAffinoidAlgebra K A)
+    (x : affinoidPointTopCat K hA) :
+    IsLocalRing ((affinoidStructureSheaf K hA).presheaf.stalk x) := sorry
+
+/-- The locally ringed space defined by an affinoid Berkovich spectrum and its structure sheaf. -/
+noncomputable def affinoidLocallyRingedSpace {A : Type u} [CommRing A] [Algebra K A]
+    (hA : IsAffinoidAlgebra K A) : AlgebraicGeometry.LocallyRingedSpace.{u + 1} :=
+  { toSheafedSpace :=
+      { carrier := affinoidPointTopCat K hA
+        presheaf := (affinoidStructureSheaf K hA).presheaf
+        IsSheaf := (affinoidStructureSheaf K hA).2 }
+    isLocalRing := affinoidStructureSheafStalkIsLocalRing K hA }
+
 /-- The Berkovich space associated to a strict affinoid algebra. -/
 noncomputable def ofAffinoid {A : Type v} [CommRing A] [Algebra K A]
     (hA : IsAffinoidAlgebra K A) : BerkovichSpace K := sorry
+
+/-- The underlying locally ringed space of a canonical affinoid object is the affinoid model. -/
+noncomputable def toLocallyRingedSpaceOfAffinoidIso
+    {A : Type u} [CommRing A] [Algebra K A] (hA : IsAffinoidAlgebra K A) :
+    toLocallyRingedSpace K (ofAffinoid K hA) ≅ affinoidLocallyRingedSpace K hA := sorry
 
 /-- Global analytic functions on an affinoid Berkovich space recover its coordinate algebra. -/
 noncomputable def globalSectionsOfAffinoidEquiv {A : Type u} [CommRing A] [Algebra K A]

@@ -56,11 +56,13 @@ private noncomputable abbrev polynomialShear (p : MvPolynomial (Fin (n + 1)) K) 
 
 variable {p : MvPolynomial (Fin (n + 1)) K} {v w : Fin (n + 1) →₀ ℕ}
 
+omit [CompleteSpace K] [IsUltrametricDist K] in
 private lemma lt_up (hv : ∀ i, v i < up(p)) : ∀ l ∈ List.ofFn v, l < up(p) := by
   intro l hl
   obtain ⟨i, rfl⟩ := List.mem_ofFn.mp hl
   exact hv i
 
+omit [CompleteSpace K] [IsUltrametricDist K] in
 private lemma sum_weight_mul_ne (hv : ∀ i, v i < up(p)) (hw : ∀ i, w i < up(p))
     (hvw : v ≠ w) :
     ∑ i : Fin (n + 1), weight(p) i * v i ≠ ∑ i : Fin (n + 1), weight(p) i * w i := by
@@ -72,6 +74,7 @@ private lemma sum_weight_mul_ne (hv : ∀ i, v i < up(p)) (hw : ∀ i, w i < up(
   simpa only [Nat.ofDigits_eq_sum_mapIdx, List.mapIdx_eq_ofFn, List.get_ofFn,
     List.length_ofFn, Fin.val_cast, mul_comm, Fin.sum_ofFn] using! h
 
+omit [CompleteSpace K] [IsUltrametricDist K] in
 private lemma degreeOf_zero_polynomialShear_monomial {a : K} (ha : a ≠ 0) :
     ((polynomialShear K p 1) (MvPolynomial.monomial v a)).degreeOf 0 =
       ∑ i : Fin (n + 1), weight(p) i * v i := by
@@ -97,6 +100,7 @@ private lemma degreeOf_zero_polynomialShear_monomial {a : K} (ha : a ≠ 0) :
       Finset.sum_congr rfl (fun i _ ↦ by
         rw [add_comm (Polynomial.C _), Polynomial.natDegree_X_pow_add_C, mul_comm])
 
+omit [CompleteSpace K] [IsUltrametricDist K] in
 private lemma degreeOf_polynomialShear_monomial_ne (hv : v ∈ p.support) (hw : w ∈ p.support)
     (hvw : v ≠ w) :
     ((polynomialShear K p 1) (MvPolynomial.monomial v (MvPolynomial.coeff v p))).degreeOf 0 ≠
@@ -111,6 +115,7 @@ private lemma degreeOf_polynomialShear_monomial_ne (hv : v ∈ p.support) (hw : 
       ((MvPolynomial.monomial_le_degreeOf i ‹_›).trans (MvPolynomial.degreeOf_le_totalDegree p i))
       (by omega)
 
+omit [CompleteSpace K] [IsUltrametricDist K] in
 private lemma leadingCoeff_finSuccEquiv_polynomialShear_monomial :
     (MvPolynomial.finSuccEquiv K n
       ((polynomialShear K p 1) (MvPolynomial.monomial v (MvPolynomial.coeff v p)))).leadingCoeff =
@@ -134,6 +139,7 @@ private lemma leadingCoeff_finSuccEquiv_polynomialShear_monomial :
     simp only [hlead, one_pow, Finset.prod_const_one, mul_one]
   · exact fun i ↦ pow_zero _
 
+omit [CompleteSpace K] [IsUltrametricDist K] in
 /-- After the triangular coordinate change, the leading coefficient in the first variable is one
 of the original coefficients. -/
 private lemma exists_leadingCoeff_polynomialShear_eq (hp : p ≠ 0) :
@@ -186,6 +192,7 @@ private noncomputable def tateShearPoint (p : MvPolynomial (Fin (n + 1)) K) (c :
   if i = 0 then tateVariable K _ 0
   else tateVariable K _ i + c • tateVariable K _ 0 ^ weight(p) i
 
+omit [CompleteSpace K] in
 private theorem norm_tateShearPoint_le (p : MvPolynomial (Fin (n + 1)) K) (c : K)
     (hc : ‖c‖ ≤ 1) (i : Fin (n + 1)) : ‖tateShearPoint K p c i‖ ≤ 1 := by
   by_cases hi : i = 0
@@ -273,6 +280,7 @@ private noncomputable def leadingPolynomial (f : TateAlgebra K (Fin (n + 1))) :
     MvPolynomial (Fin (n + 1)) K :=
   ∑ ν ∈ leadingSupport f, MvPolynomial.monomial ν (MvPowerSeries.coeff ν f.1)
 
+omit [CompleteSpace K] in
 private theorem coeff_leadingPolynomial (f : TateAlgebra K (Fin (n + 1)))
     (μ : Fin (n + 1) →₀ ℕ) :
     MvPolynomial.coeff μ (leadingPolynomial K f) =
@@ -283,6 +291,7 @@ private theorem coeff_leadingPolynomial (f : TateAlgebra K (Fin (n + 1)))
   simpa only [eq_comm] using
     (Finset.sum_ite_eq (leadingSupport f) μ fun ν ↦ MvPowerSeries.coeff ν f.1)
 
+omit [CompleteSpace K] in
 private theorem ofPolynomial_leadingPolynomial (f : TateAlgebra K (Fin (n + 1))) :
     TateAlgebra.ofPolynomial K _ (leadingPolynomial K f) = leadingPart f := by
   classical
@@ -292,6 +301,7 @@ private theorem ofPolynomial_leadingPolynomial (f : TateAlgebra K (Fin (n + 1)))
   apply Subtype.ext
   rw [coe_ofPolynomial, MvPolynomial.coe_monomial, coe_monomial]
 
+omit [CompleteSpace K] in
 private theorem norm_leadingPart_eq {f : TateAlgebra K (Fin (n + 1))} (hf : f ≠ 0) :
     ‖leadingPart f‖ = ‖f‖ := by
   have htail := norm_sub_leadingPart_lt hf
@@ -513,7 +523,7 @@ private noncomputable def succMap (n : ℕ) :
     rw [mem_cofinite] at hp ⊢
     refine hp.image (Finsupp.embDomain e) |>.subset ?_
     intro x hx
-    simp only [Set.mem_compl_iff, Set.mem_setOf_eq] at hx ⊢
+    simp only [Set.mem_compl_iff] at hx ⊢
     by_cases hxr : x ∈ Set.range (Finsupp.embDomain e)
     · obtain ⟨y, rfl⟩ := hxr
       refine ⟨y, ?_, rfl⟩
@@ -526,6 +536,7 @@ private noncomputable def succMap (n : ℕ) :
       · simpa [Finsupp.embDomain_eq_mapDomain] using hxr
   simpa [MvPowerSeries.IsRestricted, Finsupp.prod] using hrename
 
+omit [CompleteSpace K] in
 @[simp]
 private theorem succMap_tateVariable (n : ℕ) (i : Fin n) :
     succMap K n (tateVariable K (Fin n) i) = tateVariable K (Fin (n + 1)) i.succ := by
@@ -573,6 +584,7 @@ private noncomputable def coeffSlice (n j : ℕ) (f : TateAlgebra K (Fin (n + 1)
     exact (tendsto_norm_coeff_zero K (Fin (n + 1)) f).comp
       (Finsupp.cons_right_injective j).tendsto_cofinite⟩
 
+omit [CompleteSpace K] in
 @[simp]
 private theorem coeff_coeffSlice (n j : ℕ) (f : TateAlgebra K (Fin (n + 1)))
     (μ : Fin n →₀ ℕ) :
@@ -580,17 +592,20 @@ private theorem coeff_coeffSlice (n j : ℕ) (f : TateAlgebra K (Fin (n + 1)))
       MvPowerSeries.coeff (μ.cons j) f.1 :=
   rfl
 
+omit [CompleteSpace K] in
 private theorem monomial_single_zero_eq_tateVariable_pow (n j : ℕ) :
     monomial (Finsupp.single (0 : Fin (n + 1)) j) (1 : K) =
       tateVariable K (Fin (n + 1)) 0 ^ j := by
   apply Subtype.ext
   exact (MvPowerSeries.X_pow_eq (R := K) (0 : Fin (n + 1)) j).symm
 
+omit [CompleteSpace K] in
 private theorem coe_succMap (n : ℕ) (a : TateAlgebra K (Fin n)) :
     ((succMap K n a : TateAlgebra K (Fin (n + 1))) : MvPowerSeries (Fin (n + 1)) K) =
       MvPowerSeries.rename (Fin.succEmb n) a.1 :=
   rfl
 
+omit [CompleteSpace K] in
 private theorem coeff_succMap_mul_tateVariable_pow (n j : ℕ)
     (a : TateAlgebra K (Fin n)) (μ : Fin (n + 1) →₀ ℕ) :
     MvPowerSeries.coeff μ
@@ -632,6 +647,7 @@ private theorem coeff_succMap_mul_tateVariable_pow (n j : ℕ)
       exact hjμ (Nat.le_antisymm (by simpa [Finsupp.single_le_iff] using hle) hμj)
     · rfl
 
+omit [CompleteSpace K] in
 /-- A series whose first-variable exponents are bounded by `d` is a polynomial of degree less
 than `d` in that variable, with coefficients in the remaining-variable Tate algebra. -/
 private theorem eq_sum_succMap_coeffSlice_mul_pow {n d : ℕ}
@@ -717,6 +733,7 @@ end FiniteStep
 
 /-! ## Noether normalization and the affinoid Nullstellensatz -/
 
+omit [CompleteSpace K] in
 /-- The zero-variable Tate algebra is one-dimensional over the ground field. -/
 private theorem finite_tateAlgebra_fin_zero : Module.Finite K (TateAlgebra K (Fin 0)) := by
   apply Module.Finite.of_surjective (Algebra.linearMap K (TateAlgebra K (Fin 0)))
@@ -893,9 +910,7 @@ theorem finite_of_isField_of_isAffinoidAlgebra (hA : IsAffinoidAlgebra K A)
         have hX₀inv : X₀ * X₀⁻¹ = 1 := mul_inv_cancel₀ hX₀
         have hconst := congrArg
           (fun z : TateAlgebra K (Fin (d + 1)) ↦ MvPowerSeries.constantCoeff z.1) hX₀inv
-        have : (0 : K) = 1 := by
-          simpa [X₀] using hconst
-        exact (zero_ne_one : (0 : K) ≠ 1) this
+        simp [X₀] at hconst
   subst d
   let κ : K →ₐ[K] TateAlgebra K (Fin 0) := Algebra.ofId K (TateAlgebra K (Fin 0))
   have hκfin : κ.Finite := by

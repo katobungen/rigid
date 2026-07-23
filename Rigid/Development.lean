@@ -1,5 +1,6 @@
 import Mathlib
 import Rigid.AffinoidAlgebra.AutomaticContinuity
+import Rigid.AffinoidAlgebra.BanachRealization
 import Rigid.AffinoidAlgebra.Basic
 import Rigid.AffinoidAlgebra.MaximalSpectrum
 import Rigid.Berkovich.Nonempty
@@ -398,18 +399,14 @@ theorem residueIsUltrametricDist (P : AffinoidPresentation K A) :
 /-- The metric topology of the residue norm is the quotient topology. -/
 theorem residueNormedCommRing_topology_eq (P : AffinoidPresentation K A) :
     (letI := P.residueNormedCommRing
-     inferInstance : TopologicalSpace A) = P.residueTopology := by
-  let Q : Rigid.AffinoidPresentation K A :=
-    { n := P.n, ideal := P.ideal, equiv := P.equiv }
-  exact Rigid.AffinoidPresentation.residueNormedCommRing_topology_eq K A Q
+     inferInstance : TopologicalSpace A) = P.residueTopology :=
+  Rigid.residueNormedCommRing_topology_eq K A P.n P.ideal P.equiv
 
 /-- The presentation map gives the target its exact quotient norm when the residue norm is used. -/
 theorem isQuotientNorm_toAlgHom (P : AffinoidPresentation K A) :
     letI := P.residueNormedCommRing
-    IsQuotientNorm (P.toAlgHom : TateAlgebra K (Fin P.n) → A) := by
-  let Q : Rigid.AffinoidPresentation K A :=
-    { n := P.n, ideal := P.ideal, equiv := P.equiv }
-  exact Rigid.AffinoidPresentation.isQuotientNorm_toAlgHom K A Q
+    IsQuotientNorm (P.toAlgHom : TateAlgebra K (Fin P.n) → A) :=
+  Rigid.isQuotientNorm_toAlgHom K A P.n P.ideal P.equiv
 
 end AffinoidPresentation
 
@@ -487,7 +484,9 @@ canonical quotient topology. -/
 theorem topology_eq_affinoidTopology_of_isAffinoidAlgebra
     (A : Type v) [NormedCommRing A] [NormedAlgebra K A] [CompleteSpace A]
     [IsUltrametricDist A] (hA : IsAffinoidAlgebra K A) :
-    (inferInstance : TopologicalSpace A) = affinoidTopology K A hA := sorry
+    (inferInstance : TopologicalSpace A) = affinoidTopology K A hA :=
+  Rigid.topology_eq_affinoidTopology_of_presentation K A
+    hA.presentation.n hA.presentation.ideal hA.presentation.equiv
 
 /-- The norm of an affinoid algebra is equivalent to the quotient norm induced by a finite Tate
 algebra presentation. -/
@@ -495,20 +494,10 @@ theorem exists_equivalent_quotientNorm_presentation_of_isAffinoidAlgebra
     (A : Type v) [NormedCommRing A] [NormedAlgebra K A] [CompleteSpace A]
     [IsUltrametricDist A] (hA : IsAffinoidAlgebra K A) :
     ∃ (n : ℕ) (π : ContinuousAlgHom K (TateAlgebra K (Fin n)) A),
-      IsEquivalentQuotientNorm (π : TateAlgebra K (Fin n) → A) := by
-  let P := hA.presentation
-  let π : ContinuousAlgHom K (TateAlgebra K (Fin P.n)) A :=
-    { toAlgHom := P.toAlgHom
-      cont := by
-        change @Continuous (TateAlgebra K (Fin P.n)) A
-          (inferInstance : TopologicalSpace (TateAlgebra K (Fin P.n)))
-          (inferInstance : TopologicalSpace A) P.toAlgHom
-        rw [topology_eq_affinoidTopology_of_isAffinoidAlgebra K A hA,
-          affinoidTopology_eq_residueTopology K A hA P]
-        exact continuous_coinduced_rng }
-  exact ⟨P.n, π,
-    isEquivalentQuotientNorm_of_surjective_continuousAlgHom π
-      (AffinoidPresentation.toAlgHom_surjective K A P)⟩
+      IsEquivalentQuotientNorm (π : TateAlgebra K (Fin n) → A) :=
+  Rigid.exists_equivalent_quotientNorm_presentation_of_presentation_topology_eq K A
+    hA.presentation.n hA.presentation.ideal hA.presentation.equiv
+    (topology_eq_affinoidTopology_of_isAffinoidAlgebra K A hA)
 
 /-- Every algebra homomorphism between complete normed realizations of strict affinoid algebras is
 continuous. -/
@@ -516,12 +505,12 @@ theorem continuous_of_isAffinoidAlgebra
     {A : Type v} [NormedCommRing A] [NormedAlgebra K A] [CompleteSpace A]
     [IsUltrametricDist A] {B : Type w} [NormedCommRing B] [NormedAlgebra K B]
     [CompleteSpace B] [IsUltrametricDist B] (hA : IsAffinoidAlgebra K A)
-    (hB : IsAffinoidAlgebra K B) (f : A →ₐ[K] B) : Continuous f := by
-  change @Continuous A B (inferInstance : TopologicalSpace A)
-    (inferInstance : TopologicalSpace B) f
-  rw [topology_eq_affinoidTopology_of_isAffinoidAlgebra K A hA,
-    topology_eq_affinoidTopology_of_isAffinoidAlgebra K B hB]
-  exact continuous_for_affinoidTopology_of_isAffinoidAlgebra K hA hB f
+    (hB : IsAffinoidAlgebra K B) (f : A →ₐ[K] B) : Continuous f :=
+  Rigid.continuous_of_presentation_topology_eq K
+    hA.presentation.ideal hA.presentation.equiv
+    hB.presentation.ideal hB.presentation.equiv f
+    (topology_eq_affinoidTopology_of_isAffinoidAlgebra K A hA)
+    (topology_eq_affinoidTopology_of_isAffinoidAlgebra K B hB)
 
 end BanachRealization
 
@@ -1984,6 +1973,11 @@ theorem isParacompact_iff_of_iso {X Y : RigidSpace K} (e : X ≅ Y) :
 theorem isSeparated_iff_of_iso {X Y : RigidSpace K} (e : X ≅ Y) :
     IsSeparated K X ↔ IsSeparated K Y := sorry
 
+private theorem isAffinoidAlgebra_toRigid (A : Type v) [CommRing A] [Algebra K A]
+    (hA : IsAffinoidAlgebra K A) : Rigid.IsAffinoidAlgebra K A := by
+  rcases hA with ⟨P⟩
+  exact ⟨{ n := P.n, ideal := P.ideal, equiv := P.equiv }⟩
+
 /-- The rigid space associated to a strict affinoid algebra. -/
 noncomputable def ofAffinoid {A : Type v} [CommRing A] [Algebra K A]
     (hA : IsAffinoidAlgebra K A) : RigidSpace K := sorry
@@ -2009,11 +2003,6 @@ end AffinoidDomain
 /-- The points of an affinoid rigid space are the maximal ideals of its coordinate algebra. -/
 noncomputable def pointsOfAffinoidEquiv {A : Type v} [CommRing A] [Algebra K A]
     (hA : IsAffinoidAlgebra K A) : Point K (ofAffinoid K hA) ≃ MaximalSpectrum A := sorry
-
-private theorem isAffinoidAlgebra_toRigid (A : Type v) [CommRing A] [Algebra K A]
-    (hA : IsAffinoidAlgebra K A) : Rigid.IsAffinoidAlgebra K A := by
-  rcases hA with ⟨P⟩
-  exact ⟨{ n := P.n, ideal := P.ideal, equiv := P.equiv }⟩
 
 /-- Pullback of maximal ideals along a morphism of affinoid algebras. -/
 noncomputable def maximalSpectrumComap {A : Type v} {B : Type w}
@@ -2219,6 +2208,31 @@ noncomputable def germ {X : BerkovichSpace K}
 
 end StructureSheaf
 
+/-- The functor from Berkovich spaces to their underlying mathlib locally ringed spaces. -/
+noncomputable def locallyRingedSpaceFunctor :
+    BerkovichSpace K ⥤ AlgebraicGeometry.LocallyRingedSpace.{u + 1} := sorry
+
+/-- The ordinary locally ringed space underlying a Berkovich analytic space. -/
+noncomputable def toLocallyRingedSpace (X : BerkovichSpace K) :
+    AlgebraicGeometry.LocallyRingedSpace.{u + 1} :=
+  (locallyRingedSpaceFunctor K).obj X
+
+/-- The specified point topology agrees with the underlying space of the locally ringed model. -/
+noncomputable def pointHomeomorphToLocallyRingedSpace (X : BerkovichSpace K) :
+    Point K X ≃ₜ (toLocallyRingedSpace K X).toTopCat := sorry
+
+/-- Forgetting the Berkovich analytic structure to a locally ringed space is faithful. -/
+noncomputable instance locallyRingedSpaceFunctorFaithful :
+    (locallyRingedSpaceFunctor K).Faithful := sorry
+
+/-- The point homeomorphism is natural with respect to analytic morphisms. -/
+@[simp]
+theorem pointHomeomorphToLocallyRingedSpace_naturality
+    {X Y : BerkovichSpace K} (f : X ⟶ Y) (x : Point K X) :
+    pointHomeomorphToLocallyRingedSpace K Y (Point.map K f x) =
+      ((locallyRingedSpaceFunctor K).map f).toHom.base
+        (pointHomeomorphToLocallyRingedSpace K X x) := sorry
+
 /-- Concrete data of a morphism of Berkovich analytic spaces. -/
 structure AnalyticMorphismData (X Y : BerkovichSpace K) where
   base : Point K X → Point K Y
@@ -2317,6 +2331,58 @@ theorem analyticHomEquiv_comp {X Y Z : BerkovichSpace K} (f : X ⟶ Y) (g : Y �
       AnalyticMorphismData.comp K (analyticHomEquiv K X Y f)
         (analyticHomEquiv K Y Z g) := sorry
 
+/-- An analytic domain in a Berkovich space. Unlike an ordinary open subset, an analytic domain
+carries the induced analytic structure and participates in the Berkovich G-topology. -/
+def AnalyticDomain (X : BerkovichSpace K) : Type (u + 1) := sorry
+
+/-- Analytic domains form a category under admissible inclusions. -/
+noncomputable instance analyticDomainCategory (X : BerkovichSpace K) :
+    Category.{u + 1} (AnalyticDomain K X) := sorry
+
+/-- There is at most one admissible inclusion between two analytic domains. -/
+noncomputable instance analyticDomainIsThin (X : BerkovichSpace K) :
+    Quiver.IsThin (AnalyticDomain K X) := sorry
+
+namespace AnalyticDomain
+
+/-- The point set underlying an analytic domain. -/
+noncomputable def carrier {X : BerkovichSpace K} (U : AnalyticDomain K X) :
+    Set (Point K X) := sorry
+
+/-- Morphisms of analytic domains are exactly inclusions of their point sets. -/
+theorem nonempty_hom_iff_subset {X : BerkovichSpace K} (U V : AnalyticDomain K X) :
+    Nonempty (U ⟶ V) ↔ carrier K U ⊆ carrier K V := sorry
+
+/-- Inverse image of analytic domains along an analytic morphism. -/
+noncomputable def preimage {X Y : BerkovichSpace K} (f : X ⟶ Y) :
+    AnalyticDomain K Y ⥤ AnalyticDomain K X := sorry
+
+/-- The carrier of an inverse-image domain is the pointwise inverse image. -/
+@[simp]
+theorem carrier_preimage {X Y : BerkovichSpace K} (f : X ⟶ Y) (U : AnalyticDomain K Y) :
+    carrier K ((preimage K f).obj U) = Point.map K f ⁻¹' carrier K U := sorry
+
+end AnalyticDomain
+
+/-- The Grothendieck topology of admissible coverings on analytic domains. -/
+noncomputable def analyticDomainGrothendieckTopology (X : BerkovichSpace K) :
+    GrothendieckTopology (AnalyticDomain K X) := sorry
+
+/-- Inverse image of analytic domains is continuous for their Grothendieck topologies. -/
+noncomputable instance AnalyticDomain.preimageIsContinuous
+    {X Y : BerkovichSpace K} (f : X ⟶ Y) :
+    (AnalyticDomain.preimage K f).IsContinuous
+      (analyticDomainGrothendieckTopology K Y) (analyticDomainGrothendieckTopology K X) := sorry
+
+/-- Restriction of a Berkovich space to an analytic domain. -/
+noncomputable def restrictToAnalyticDomain {X : BerkovichSpace K}
+    (U : AnalyticDomain K X) : BerkovichSpace K := sorry
+
+/-- Restriction to an analytic domain has the corresponding subspace of points. -/
+noncomputable def pointsRestrictToAnalyticDomainHomeomorph {X : BerkovichSpace K}
+    (U : AnalyticDomain K X) :
+    Point K (restrictToAnalyticDomain K U) ≃ₜ ↥U.carrier := sorry
+
 /-- An affinoid domain in a Berkovich space. -/
 def AffinoidDomain (X : BerkovichSpace K) : Type (u + 1) := sorry
 
@@ -2325,6 +2391,15 @@ namespace AffinoidDomain
 /-- The set of points belonging to an affinoid domain. -/
 noncomputable def carrier {X : BerkovichSpace K} (U : AffinoidDomain K X) :
     Set (Point K X) := sorry
+
+/-- Every affinoid domain determines an analytic domain. -/
+noncomputable def toAnalyticDomain {X : BerkovichSpace K} (U : AffinoidDomain K X) :
+    AnalyticDomain K X := sorry
+
+/-- Passing to the underlying analytic domain preserves the point set. -/
+@[simp]
+theorem carrier_toAnalyticDomain {X : BerkovichSpace K} (U : AffinoidDomain K X) :
+    (toAnalyticDomain K U).carrier = U.carrier := sorry
 
 /-- An affinoid domain is modeled on a strict affinoid algebra. -/
 def IsStrict {X : BerkovichSpace K} (U : AffinoidDomain K X) : Prop := sorry
@@ -2415,9 +2490,52 @@ theorem isHausdorff_iff_of_iso {X Y : BerkovichSpace K} (e : X ≅ Y) :
     letI := hT2
     exact h.symm.t2Space
 
+/-- A universe-controlled point space for an affinoid Berkovich spectrum. -/
+noncomputable def affinoidPointTopCat {A : Type u} [CommRing A] [Algebra K A]
+    (_hA : IsAffinoidAlgebra K A) : TopCat.{u + 1} := sorry
+
+/-- The universe-controlled point space is homeomorphic to the relative Berkovich spectrum. -/
+noncomputable def affinoidPointHomeomorph {A : Type u} [CommRing A] [Algebra K A]
+    (hA : IsAffinoidAlgebra K A) :
+    letI : NormedCommRing A := hA.presentation.residueNormedCommRing K A
+    letI : NormedAlgebra K A := hA.presentation.residueNormedAlgebra K A
+    affinoidPointTopCat K hA ≃ₜ BerkovichSpectrumOver K A := sorry
+
+/-- The analytic structure sheaf on an affinoid Berkovich spectrum. -/
+noncomputable def affinoidStructureSheaf {A : Type u} [CommRing A] [Algebra K A]
+    (hA : IsAffinoidAlgebra K A) :
+    TopCat.Sheaf CommRingCat.{u + 1} (affinoidPointTopCat K hA) := sorry
+
+/-- Global sections of the affinoid structure sheaf recover the coordinate ring. -/
+noncomputable def affinoidStructureSheafGlobalSectionsEquiv
+    {A : Type u} [CommRing A] [Algebra K A] (hA : IsAffinoidAlgebra K A) :
+    ((affinoidStructureSheaf K hA).presheaf.obj
+      (Opposite.op (⊤ : TopologicalSpace.Opens (affinoidPointTopCat K hA))) : Type (u + 1)) ≃+*
+      A := sorry
+
+/-- Stalks of the affinoid structure sheaf are local rings. -/
+noncomputable instance affinoidStructureSheafStalkIsLocalRing
+    {A : Type u} [CommRing A] [Algebra K A] (hA : IsAffinoidAlgebra K A)
+    (x : affinoidPointTopCat K hA) :
+    IsLocalRing ((affinoidStructureSheaf K hA).presheaf.stalk x) := sorry
+
+/-- The locally ringed space defined by an affinoid Berkovich spectrum and its structure sheaf. -/
+noncomputable def affinoidLocallyRingedSpace {A : Type u} [CommRing A] [Algebra K A]
+    (hA : IsAffinoidAlgebra K A) : AlgebraicGeometry.LocallyRingedSpace.{u + 1} :=
+  { toSheafedSpace :=
+      { carrier := affinoidPointTopCat K hA
+        presheaf := (affinoidStructureSheaf K hA).presheaf
+        IsSheaf := (affinoidStructureSheaf K hA).2 }
+    isLocalRing := affinoidStructureSheafStalkIsLocalRing K hA }
+
 /-- The Berkovich space associated to a strict affinoid algebra. -/
 noncomputable def ofAffinoid {A : Type v} [CommRing A] [Algebra K A]
     (hA : IsAffinoidAlgebra K A) : BerkovichSpace K := sorry
+
+/-- The underlying locally ringed space of a canonical affinoid object is the affinoid model. -/
+noncomputable def toLocallyRingedSpaceOfAffinoidIso
+    {A : Type u} [CommRing A] [Algebra K A] (hA : IsAffinoidAlgebra K A) :
+    toLocallyRingedSpace K (ofAffinoid K hA) ≅ affinoidLocallyRingedSpace K hA := sorry
 
 /-- Global analytic functions on an affinoid Berkovich space recover its coordinate algebra. -/
 noncomputable def globalSectionsOfAffinoidEquiv {A : Type u} [CommRing A] [Algebra K A]
@@ -2458,7 +2576,48 @@ noncomputable def spectrumComap {A : Type v} {B : Type w}
      BerkovichSpectrumOver K B) →
       (letI : NormedCommRing A := hA.presentation.residueNormedCommRing K A
        letI : NormedAlgebra K A := hA.presentation.residueNormedAlgebra K A
-       BerkovichSpectrumOver K A) := sorry
+       BerkovichSpectrumOver K A) := by
+  letI : NormedCommRing A := hA.presentation.residueNormedCommRing K A
+  letI : NormedAlgebra K A := hA.presentation.residueNormedAlgebra K A
+  letI : CompleteSpace A := hA.presentation.residueCompleteSpace K A
+  letI : IsUltrametricDist A := hA.presentation.residueIsUltrametricDist K A
+  letI : NormedCommRing B := hB.presentation.residueNormedCommRing K B
+  letI : NormedAlgebra K B := hB.presentation.residueNormedAlgebra K B
+  letI : CompleteSpace B := hB.presentation.residueCompleteSpace K B
+  letI : IsUltrametricDist B := hB.presentation.residueIsUltrametricDist K B
+  let φ : ContinuousAlgHom K A B :=
+    { __ := f
+      cont := continuous_of_isAffinoidAlgebra K hA hB f }
+  intro x
+  refine
+    { toBerkovichSpectrum := ?_
+      map_algebraMap' := ?_ }
+  · refine
+      { seminorm :=
+          { toFun := fun a ↦ x (φ a)
+            map_zero' := by simp
+            add_le' := by
+              intro a b
+              simpa only [map_add] using
+                BerkovichSpectrum.map_add_le B x.toBerkovichSpectrum (φ a) (φ b)
+            neg' := by simp
+            map_one' := by simp
+            map_mul' := by simp }
+        le_norm' := ?_ }
+    intro a
+    apply contraction_of_isPowMul_of_boundedWrt (SeminormedRing.toRingSeminorm A)
+      (nβ := fun b : B ↦ x b)
+    · intro b n hn
+      exact map_pow x.toBerkovichSpectrum.seminorm b n
+    · obtain ⟨M, hM, hφ⟩ := SemilinearMapClass.bound_of_continuous φ φ.continuous
+      exact ⟨M, hM, fun a ↦
+        (BerkovichSpectrum.le_norm B x.toBerkovichSpectrum (φ a)).trans (hφ a)⟩
+  · intro r
+    change x (φ (algebraMap K A r)) = ‖r‖
+    calc
+      x (φ (algebraMap K A r)) = x (algebraMap K B r) :=
+        congrArg (fun b : B ↦ x b) (φ.commutes r)
+      _ = ‖r‖ := BerkovichSpectrumOver.map_algebraMap (K := K) (A := B) x r
 
 /-- Pullback on affinoid Berkovich spectra is pointwise precomposition with the algebra map. -/
 @[simp]
@@ -2472,13 +2631,31 @@ theorem spectrumComap_apply {A : Type v} {B : Type w}
     letI : NormedAlgebra K A := hA.presentation.residueNormedAlgebra K A
     letI : NormedCommRing B := hB.presentation.residueNormedCommRing K B
     letI : NormedAlgebra K B := hB.presentation.residueNormedAlgebra K B
-    spectrumComap K hA hB f x a = x (f a) := sorry
+    spectrumComap K hA hB f x a = x (f a) := by
+  letI : NormedCommRing A := hA.presentation.residueNormedCommRing K A
+  letI : NormedAlgebra K A := hA.presentation.residueNormedAlgebra K A
+  letI : CompleteSpace A := hA.presentation.residueCompleteSpace K A
+  letI : IsUltrametricDist A := hA.presentation.residueIsUltrametricDist K A
+  letI : NormedCommRing B := hB.presentation.residueNormedCommRing K B
+  letI : NormedAlgebra K B := hB.presentation.residueNormedAlgebra K B
+  letI : CompleteSpace B := hB.presentation.residueCompleteSpace K B
+  letI : IsUltrametricDist B := hB.presentation.residueIsUltrametricDist K B
+  rfl
 
 @[simp]
 theorem spectrumComap_id {A : Type v} [CommRing A] [Algebra K A]
     (hA : IsAffinoidAlgebra K A) :
     letI : NormedCommRing A := hA.presentation.residueNormedCommRing K A
-    spectrumComap K hA hA (AlgHom.id K A) = id := sorry
+    spectrumComap K hA hA (AlgHom.id K A) = id := by
+  letI : NormedCommRing A := hA.presentation.residueNormedCommRing K A
+  letI : NormedAlgebra K A := hA.presentation.residueNormedAlgebra K A
+  letI : CompleteSpace A := hA.presentation.residueCompleteSpace K A
+  letI : IsUltrametricDist A := hA.presentation.residueIsUltrametricDist K A
+  funext x
+  apply BerkovichSpectrumOver.ext K A
+  intro a
+  rw [spectrumComap_apply]
+  rfl
 
 @[simp]
 theorem spectrumComap_comp {A : Type v} {B : Type w} {C : Type z}
@@ -2489,7 +2666,25 @@ theorem spectrumComap_comp {A : Type v} {B : Type w} {C : Type z}
     letI : NormedCommRing B := hB.presentation.residueNormedCommRing K B
     letI : NormedCommRing C := hC.presentation.residueNormedCommRing K C
     spectrumComap K hA hC (g.comp f) =
-      spectrumComap K hA hB f ∘ spectrumComap K hB hC g := sorry
+      spectrumComap K hA hB f ∘ spectrumComap K hB hC g := by
+  letI : NormedCommRing A := hA.presentation.residueNormedCommRing K A
+  letI : NormedAlgebra K A := hA.presentation.residueNormedAlgebra K A
+  letI : NormedCommRing B := hB.presentation.residueNormedCommRing K B
+  letI : NormedAlgebra K B := hB.presentation.residueNormedAlgebra K B
+  letI : NormedCommRing C := hC.presentation.residueNormedCommRing K C
+  letI : NormedAlgebra K C := hC.presentation.residueNormedAlgebra K C
+  letI : CompleteSpace A := hA.presentation.residueCompleteSpace K A
+  letI : IsUltrametricDist A := hA.presentation.residueIsUltrametricDist K A
+  letI : CompleteSpace B := hB.presentation.residueCompleteSpace K B
+  letI : IsUltrametricDist B := hB.presentation.residueIsUltrametricDist K B
+  letI : CompleteSpace C := hC.presentation.residueCompleteSpace K C
+  letI : IsUltrametricDist C := hC.presentation.residueIsUltrametricDist K C
+  funext x
+  apply BerkovichSpectrumOver.ext K A
+  intro a
+  change x ((g.comp f) a) = spectrumComap K hA hB f (spectrumComap K hB hC g x) a
+  rw [spectrumComap_apply, spectrumComap_apply]
+  rfl
 
 /-- Pullback on affinoid Berkovich spectra is continuous. -/
 theorem continuous_spectrumComap {A : Type v} {B : Type w}
@@ -2499,7 +2694,18 @@ theorem continuous_spectrumComap {A : Type v} {B : Type w}
     letI : NormedCommRing B := hB.presentation.residueNormedCommRing K B
     letI : NormedAlgebra K A := hA.presentation.residueNormedAlgebra K A
     letI : NormedAlgebra K B := hB.presentation.residueNormedAlgebra K B
-    Continuous (spectrumComap K hA hB f) := sorry
+    Continuous (spectrumComap K hA hB f) := by
+  letI : NormedCommRing A := hA.presentation.residueNormedCommRing K A
+  letI : NormedAlgebra K A := hA.presentation.residueNormedAlgebra K A
+  letI : CompleteSpace A := hA.presentation.residueCompleteSpace K A
+  letI : IsUltrametricDist A := hA.presentation.residueIsUltrametricDist K A
+  letI : NormedCommRing B := hB.presentation.residueNormedCommRing K B
+  letI : NormedAlgebra K B := hB.presentation.residueNormedAlgebra K B
+  letI : CompleteSpace B := hB.presentation.residueCompleteSpace K B
+  letI : IsUltrametricDist B := hB.presentation.residueIsUltrametricDist K B
+  refine (BerkovichSpectrumOver.continuous_iff_eval K A).2 ?_
+  intro a
+  simpa [spectrumComap_apply] using (BerkovichSpectrumOver.continuous_eval K B (f a))
 
 /-- The morphism of affinoid Berkovich spaces induced contravariantly by an algebra homomorphism. -/
 noncomputable def ofAffinoidMap {A : Type v} {B : Type w}

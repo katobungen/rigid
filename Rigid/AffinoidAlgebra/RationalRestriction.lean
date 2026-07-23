@@ -2,7 +2,6 @@ import Rigid.AffinoidAlgebra.PowerBounded
 import Rigid.AffinoidAlgebra.RationalLocalization
 
 set_option linter.style.header false
-set_option linter.unusedSectionVars false
 
 /-!
 # Maps out of rational localizations
@@ -31,6 +30,8 @@ noncomputable def quotientCoordinate {n : ℕ} {g : A} {f : Fin n → A}
     (φ : ContinuousAlgHom K A B) (hg : IsUnit (φ g)) (i : Fin n) : B :=
   (↑hg.unit⁻¹ : B) * φ (f i)
 
+omit [CompleteSpace K] [IsUltrametricDist K] [CompleteSpace A] [IsUltrametricDist A]
+  [CompleteSpace B] [IsUltrametricDist B] in
 @[simp]
 theorem denominator_mul_quotientCoordinate {n : ℕ} {g : A} {f : Fin n → A}
     (φ : ContinuousAlgHom K A B) (hg : IsUnit (φ g)) (i : Fin n) :
@@ -66,6 +67,7 @@ theorem liftOfIsUnit_coordinate {n : ℕ} {g : A} {f : Fin n → A}
       quotientCoordinate K A (f := f) φ hg i :=
   lift_coordinate K A n g f φ _ hbounded _ i
 
+omit [CompleteSpace B] [IsUltrametricDist B] in
 /-- Maps out of a rational localization are determined by their restriction to the base whenever
 the image of the denominator is a unit. -/
 theorem hom_ext_of_isUnit {n : ℕ} {g : A} {f : Fin n → A}
