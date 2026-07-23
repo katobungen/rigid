@@ -1,7 +1,9 @@
 import Rigid.AffinoidAlgebra.AutomaticContinuity
+import Rigid.AffinoidAlgebra.BanachRealization
 import Rigid.AffinoidAlgebra.Basic
 import Rigid.AffinoidAlgebra.MaximalSpectrum
 import Rigid.AffinoidAlgebra.NoetherNormalization
+import Rigid.AffinoidAlgebra.NoetherianBanach
 import Rigid.AffinoidAlgebra.QuotientNorm
 import Rigid.AffinoidAlgebra.QuotientTopology
 import Rigid.AffinoidAlgebra.RationalDatum

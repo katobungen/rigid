@@ -1,5 +1,6 @@
 import Mathlib
 import Rigid.AffinoidAlgebra.AutomaticContinuity
+import Rigid.AffinoidAlgebra.BanachRealization
 import Rigid.AffinoidAlgebra.Basic
 import Rigid.AffinoidAlgebra.MaximalSpectrum
 import Rigid.Berkovich.Nonempty
@@ -396,18 +397,14 @@ theorem residueIsUltrametricDist (P : AffinoidPresentation K A) :
 /-- The metric topology of the residue norm is the quotient topology. -/
 theorem residueNormedCommRing_topology_eq (P : AffinoidPresentation K A) :
     (letI := P.residueNormedCommRing
-     inferInstance : TopologicalSpace A) = P.residueTopology := by
-  let Q : Rigid.AffinoidPresentation K A :=
-    { n := P.n, ideal := P.ideal, equiv := P.equiv }
-  exact Rigid.AffinoidPresentation.residueNormedCommRing_topology_eq K A Q
+     inferInstance : TopologicalSpace A) = P.residueTopology :=
+  Rigid.residueNormedCommRing_topology_eq K A P.n P.ideal P.equiv
 
 /-- The presentation map gives the target its exact quotient norm when the residue norm is used. -/
 theorem isQuotientNorm_toAlgHom (P : AffinoidPresentation K A) :
     letI := P.residueNormedCommRing
-    IsQuotientNorm (P.toAlgHom : TateAlgebra K (Fin P.n) → A) := by
-  let Q : Rigid.AffinoidPresentation K A :=
-    { n := P.n, ideal := P.ideal, equiv := P.equiv }
-  exact Rigid.AffinoidPresentation.isQuotientNorm_toAlgHom K A Q
+    IsQuotientNorm (P.toAlgHom : TateAlgebra K (Fin P.n) → A) :=
+  Rigid.isQuotientNorm_toAlgHom K A P.n P.ideal P.equiv
 
 end AffinoidPresentation
 
@@ -485,7 +482,9 @@ canonical quotient topology. -/
 theorem topology_eq_affinoidTopology_of_isAffinoidAlgebra
     (A : Type v) [NormedCommRing A] [NormedAlgebra K A] [CompleteSpace A]
     [IsUltrametricDist A] (hA : IsAffinoidAlgebra K A) :
-    (inferInstance : TopologicalSpace A) = affinoidTopology K A hA := sorry
+    (inferInstance : TopologicalSpace A) = affinoidTopology K A hA :=
+  Rigid.topology_eq_affinoidTopology_of_presentation K A
+    hA.presentation.n hA.presentation.ideal hA.presentation.equiv
 
 /-- The norm of an affinoid algebra is equivalent to the quotient norm induced by a finite Tate
 algebra presentation. -/
@@ -493,20 +492,10 @@ theorem exists_equivalent_quotientNorm_presentation_of_isAffinoidAlgebra
     (A : Type v) [NormedCommRing A] [NormedAlgebra K A] [CompleteSpace A]
     [IsUltrametricDist A] (hA : IsAffinoidAlgebra K A) :
     ∃ (n : ℕ) (π : ContinuousAlgHom K (TateAlgebra K (Fin n)) A),
-      IsEquivalentQuotientNorm (π : TateAlgebra K (Fin n) → A) := by
-  let P := hA.presentation
-  let π : ContinuousAlgHom K (TateAlgebra K (Fin P.n)) A :=
-    { toAlgHom := P.toAlgHom
-      cont := by
-        change @Continuous (TateAlgebra K (Fin P.n)) A
-          (inferInstance : TopologicalSpace (TateAlgebra K (Fin P.n)))
-          (inferInstance : TopologicalSpace A) P.toAlgHom
-        rw [topology_eq_affinoidTopology_of_isAffinoidAlgebra K A hA,
-          affinoidTopology_eq_residueTopology K A hA P]
-        exact continuous_coinduced_rng }
-  exact ⟨P.n, π,
-    isEquivalentQuotientNorm_of_surjective_continuousAlgHom π
-      (AffinoidPresentation.toAlgHom_surjective K A P)⟩
+      IsEquivalentQuotientNorm (π : TateAlgebra K (Fin n) → A) :=
+  Rigid.exists_equivalent_quotientNorm_presentation_of_presentation_topology_eq K A
+    hA.presentation.n hA.presentation.ideal hA.presentation.equiv
+    (topology_eq_affinoidTopology_of_isAffinoidAlgebra K A hA)
 
 /-- Every algebra homomorphism between complete normed realizations of strict affinoid algebras is
 continuous. -/
@@ -514,12 +503,12 @@ theorem continuous_of_isAffinoidAlgebra
     {A : Type v} [NormedCommRing A] [NormedAlgebra K A] [CompleteSpace A]
     [IsUltrametricDist A] {B : Type w} [NormedCommRing B] [NormedAlgebra K B]
     [CompleteSpace B] [IsUltrametricDist B] (hA : IsAffinoidAlgebra K A)
-    (hB : IsAffinoidAlgebra K B) (f : A →ₐ[K] B) : Continuous f := by
-  change @Continuous A B (inferInstance : TopologicalSpace A)
-    (inferInstance : TopologicalSpace B) f
-  rw [topology_eq_affinoidTopology_of_isAffinoidAlgebra K A hA,
-    topology_eq_affinoidTopology_of_isAffinoidAlgebra K B hB]
-  exact continuous_for_affinoidTopology_of_isAffinoidAlgebra K hA hB f
+    (hB : IsAffinoidAlgebra K B) (f : A →ₐ[K] B) : Continuous f :=
+  Rigid.continuous_of_presentation_topology_eq K
+    hA.presentation.ideal hA.presentation.equiv
+    hB.presentation.ideal hB.presentation.equiv f
+    (topology_eq_affinoidTopology_of_isAffinoidAlgebra K A hA)
+    (topology_eq_affinoidTopology_of_isAffinoidAlgebra K B hB)
 
 end BanachRealization
 
